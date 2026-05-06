@@ -1,6 +1,7 @@
 # SpiderPublish — AGENTS.md
 
 > Full version: [docs.spideriq.ai/site-builder/agents](https://docs.spideriq.ai/site-builder/agents)
+> **VSCode / Cursor / Antigravity extension (v0.1.0+):** [docs.spideriq.ai/extension](https://docs.spideriq.ai/extension) — install the SpiderPublish extension to operate this CMS from your IDE: native diffs, snapshot-bound preview→confirm push, JSONPath → file:line diagnostics, pre-push link audit with "Accept redirect" Quick Fix. The extension wraps the same `@spideriq/mcp-publish` surface this AGENTS.md describes — anything you can do via raw MCP, you can do via the extension UI.
 > **Session Binding (Phase 11+12):** [docs.spideriq.ai/site-builder/sessions](https://docs.spideriq.ai/site-builder/sessions)
 > **Deploy Safely (preview→confirm):** [docs.spideriq.ai/site-builder/deploy-safely](https://docs.spideriq.ai/site-builder/deploy-safely)
 > Component Builder: [docs.spideriq.ai/site-builder/component-builder](https://docs.spideriq.ai/site-builder/component-builder)
