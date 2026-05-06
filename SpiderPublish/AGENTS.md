@@ -8,7 +8,7 @@
 > Tiers Reference: [docs.spideriq.ai/site-builder/component-tiers](https://docs.spideriq.ai/site-builder/component-tiers)
 > Agent Reference: [docs.spideriq.ai/site-builder/component-agents-reference](https://docs.spideriq.ai/site-builder/component-agents-reference)
 
-**Current package versions (1.5.0, 2026-05-05):** `@spideriq/cli@1.5.0`, `@spideriq/mcp-publish@1.5.0`, `@spideriq/core@1.4.0`. The atomic publish slice now exposes **6 new Marketplace V2 tools** (search by mood / palette / brand-fit / scene-type, browse data sources, set component kind + agent_meta) — see the "Marketplace V2" section below. The kitchen-sink `@spideriq/mcp@1.5.0` totals 124 tools and bundles SpiderBook booking + mail / leads / gate / admin slices. The starter kit's `.mcp.json` defaults to `@spideriq/mcp-publish` — under the ~128-tool injection limit enforced by some IDE/LLM stacks, and less context burn per message.
+**Current package versions (1.7.0, 2026-05-06):** `@spideriq/cli@1.7.0`, `@spideriq/mcp-publish@1.7.0`, `@spideriq/core@1.6.0`. **New in 1.7.0:** `marketplace_suggest_agent_meta` — wraps the SpiderGate-powered inference engine so external LLM agents can suggest mood / palette / brand_fit_tags / scene_type / agent_meta for marketplace assets they upload (two-step: suggest → review → apply via the existing `set_*_agent_meta` tools). The atomic publish slice now exposes **7 Marketplace V2 tools** total (search, list_data_sources, set_component_kind, set_component_agent_meta, set_bg_video_agent_meta, set_site_template_agent_meta, marketplace_suggest_agent_meta) — see the "Marketplace V2" section below. The kitchen-sink `@spideriq/mcp@1.7.0` totals 126 tools and bundles SpiderBook booking + mail / leads / gate / admin slices. The starter kit's `.mcp.json` defaults to `@spideriq/mcp-publish` — under the ~128-tool injection limit enforced by some IDE/LLM stacks, and less context burn per message.
 
 ## Quick Reference
 
@@ -501,12 +501,30 @@ marketplace_search(
 |---|---|---|
 | `marketplace_search` | public | Cross-table search by mood / palette / brand_fit_tags / scene_type / agent_meta / asset_types |
 | `list_data_sources` | public | Discover available source IDs for binding `kind="dynamic"` blocks (posts, authors, IDAP×4, idap.lead) |
+| `marketplace_suggest_agent_meta` | super_admin | **NEW (1.7.0)** Suggest mood/palette/brand_fit/scene_type/agent_meta for one asset via the SpiderGate inference engine. Pure read — no DB write. Then review + apply via `set_*_agent_meta`. |
 | `set_component_kind` | gated | Promote a custom component into the 4-class taxonomy (`static / interactive / dynamic / extension`) |
 | `set_component_agent_meta` | gated | Curate axes + ComponentAgentMeta on a component so other agents can find it |
 | `set_bg_video_agent_meta` | super_admin, gated | Curate bg-video discoverability (pace, time_of_day, weather, aspect_ratio, …) |
 | `set_site_template_agent_meta` | super_admin, gated | Curate site-template discoverability (page_count, has_blog, style_aesthetic, …) |
 
-**CLI mirrors:** `npx @spideriq/cli marketplace search`, `... marketplace help`, `... sources list`, `... bg-videos set-meta`, `... content components set-kind`, `... content components set-meta`.
+**Two-step suggest → apply flow (NEW in 1.7.0):**
+
+```
+1. marketplace_suggest_agent_meta(asset_type="bg_video", slug="alpine-wildflowers")
+   → SuggestEnvelope: { proposed_universal_axes, proposed_agent_meta,
+                         confidence_per_key (action: auto_apply | review | drop),
+                         dropped_keys (off-vocab), reasoning, usage }
+
+2. Review the envelope — for values you trust:
+   set_bg_video_agent_meta(slug="alpine-wildflowers",
+                            mood=["calm","dreamy"], scene_type="nature-landscape",
+                            agent_meta={pace: "slow", time_of_day: "day", ...})
+   → gated: dry_run=true default; second call with confirm_token to apply
+```
+
+The engine validates against locked Pydantic enums BEFORE returning — off-vocab values are dropped (not stored). Confidence thresholds: ≥0.75 = auto_apply, ≥0.55 = review, else drop. Apply tools mark the row `agent_meta_source='llm_inferred'` so future bulk re-runs distinguish machine suggestions from human curation.
+
+**CLI mirrors:** `npx @spideriq/cli marketplace search`, `... marketplace help`, `... marketplace suggest <type> <slug>`, `... sources list`, `... bg-videos set-meta`, `... content components set-kind`, `... content components set-meta`.
 
 **Vocabulary (subset):**
 
@@ -518,7 +536,9 @@ marketplace_search(
 
 Full vocab + per-asset `agent_meta` keys (BgVideoAgentMeta / ComponentAgentMeta / SiteTemplateAgentMeta): [skills/content-platform/schema.yaml](skills/content-platform/schema.yaml) under `marketplace_v2_axes:`. Or call `template_get_help` (returns the canonical YAML reference).
 
-**Recipe:** [skills/recipes/marketplace-search-and-insert/](skills/recipes/marketplace-search-and-insert/) · **Example:** [examples/marketplace-search-and-insert.sh](examples/marketplace-search-and-insert.sh).
+**Recipes:**
+- [skills/recipes/marketplace-search-and-insert/](skills/recipes/marketplace-search-and-insert/) — Find a marketplace asset by intent, insert it into a page (May 2026)
+- [skills/recipes/marketplace-suggest-agent-meta/](skills/recipes/marketplace-suggest-agent-meta/) — **NEW (1.7.0)** Suggest metadata for a newly uploaded asset, then apply via `set_*_agent_meta`
 
 ## Skills — Curated Recipes
 
@@ -541,6 +561,7 @@ Multi-step workflows that compose MCP tools. Live at **[skills/](skills/)** in t
 - [recipes/link-audit](skills/recipes/link-audit/) — Find broken internal links across pages + nav before deploy (2026-04-24)
 - [recipes/tilda-migration](skills/recipes/tilda-migration/) — Port a Tilda site with `auto_extract_css` + flat slugs + `category='header'|'footer'` components (2026-04-24)
 - [recipes/marketplace-search-and-insert](skills/recipes/marketplace-search-and-insert/) — Find a marketplace asset by intent (mood/palette/brand-fit/scene), insert it into a page (2026-05-05)
+- [recipes/marketplace-suggest-agent-meta](skills/recipes/marketplace-suggest-agent-meta/) — Suggest metadata for a freshly uploaded asset via the SpiderGate inference engine, then apply via the gated `set_*_agent_meta` tools (2026-05-06)
 
 Tier 3 `impl.ts` files use only Node 18+ stdlib (`fetch`, `fs`, `path`) — zero npm dependencies. Copy-paste them into your agent's sandbox and run with `npx tsx impl.ts`. No extra runtime required.
 
