@@ -1,0 +1,35 @@
+{
+  "_description": "Reference: sys-geo-schema-injector (W7.2) — head-injection extension that emits Schema.org JSON-LD into every rendered page's `<head>`. 6 schema types (Article, Product, FAQPage, Event + universal BreadcrumbList, Organization). Per-tenant defaults via `content_settings.extensions.schema_defaults`; per-page overrides via the standard page metadata.",
+  "_block_type": "extension",
+  "_kind": "extension",
+  "_renderer_pattern": "head-injection",
+  "_min_renderer_version": "v2.78.0",
+  "_no_block_needed": "Head-injection extension activates automatically when schema_defaults.enabled=true. Per-page schema fields are read from the existing page.metadata JSON.",
+
+  "_settings_shape": {
+    "extensions": {
+      "schema_defaults": {
+        "enabled": true,
+        "site_type": "Organization",
+        "organization": {
+          "name": "Your Brand",
+          "url": "https://example.com",
+          "logo": "https://example.com/logo.png"
+        },
+        "always_emit_breadcrumb_list": true,
+        "always_emit_organization": true
+      }
+    }
+  },
+
+  "_per_page_metadata_shape": {
+    "_note": "Set on individual pages via content_pages.metadata JSON.",
+    "schema_type": "Article",
+    "schema_props": {
+      "headline": "Page title",
+      "datePublished": "2026-05-07",
+      "author": { "@type": "Person", "name": "Author Name" },
+      "image": "https://example.com/og-image.jpg"
+    }
+  }
+}

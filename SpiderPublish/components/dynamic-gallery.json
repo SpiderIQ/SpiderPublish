@@ -1,0 +1,26 @@
+{
+  "_description": "Reference: dynamic gallery block (W4.3). 4 layouts (masonry/grid/carousel/spotlight) + cross-cutting `lightbox` prop. The `spotlight` layout forces lightbox=true; other layouts make it optional.",
+  "_block_type": "dynamic",
+  "_kind": "dynamic",
+  "_layouts_available": ["masonry", "grid", "carousel", "spotlight"],
+  "_min_renderer_version": "v2.78.0",
+
+  "id": "b-gallery-1",
+  "type": "component",
+  "component_slug": "gallery",
+  "component_version": "1.0.0",
+  "layout": "masonry",
+  "data_binding": {
+    "source_id": "media",
+    "filter": { "tags": ["portfolio"] },
+    "sort": { "field": "uploaded_at", "direction": "desc" },
+    "limit": 24,
+    "field_select": ["url", "alt_text", "width", "height"]
+  },
+  "props": {
+    "lightbox": true,
+    "columns": 3,
+    "gap_px": 12,
+    "_note_on_layouts": "masonry/grid/carousel/spotlight — see component_versions for the per-layout prop schema. Spotlight always forces lightbox=true regardless of the prop value."
+  }
+}

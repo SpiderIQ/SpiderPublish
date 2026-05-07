@@ -1,0 +1,26 @@
+{
+  "_description": "Reference: RSS/Atom/JSON feed extension (W6.1). NOT a page-block — these are renderer-hook extensions that auto-expose `/feed.xml`, `/atom.xml`, `/feed.json` on every published tenant site. Configured via `content_settings.extensions.feeds`.",
+  "_block_type": "extension",
+  "_kind": "extension",
+  "_renderer_pattern": "renderer-hook",
+  "_min_renderer_version": "v2.78.0",
+  "_no_block_needed": "These are SITE-WIDE extensions. They activate automatically when content_settings.extensions.feeds.enabled = true. No page-block markup required.",
+
+  "_settings_shape": {
+    "extensions": {
+      "feeds": {
+        "enabled": true,
+        "title": "Your Site Blog",
+        "description": "Latest posts",
+        "language": "en",
+        "items": 20
+      }
+    }
+  },
+
+  "_endpoints": [
+    { "path": "/feed.xml",  "format": "RSS 2.0",       "content_type": "application/rss+xml" },
+    { "path": "/atom.xml",  "format": "Atom 1.0",      "content_type": "application/atom+xml" },
+    { "path": "/feed.json", "format": "JSON Feed 1.1", "content_type": "application/feed+json" }
+  ]
+}
