@@ -197,7 +197,7 @@ A Skill / Knowledge Item is a curated multi-step workflow the agent can invoke b
 | Core | [skills/upload-host-media/](./skills/upload-host-media/) | File/image/video upload to media.cdn.spideriq.ai |
 | Recipes | [skills/recipes/](./skills/recipes/) | 10 multi-step workflows (marketplace-search-and-insert, scroll-sequence, tilda-migration, link-audit, directory, …) |
 
-### Antigravity KIs — `knowledge/antigravity/` (lands in a follow-up commit)
+### Antigravity KIs — `knowledge/antigravity/`
 
 Antigravity reads KI summaries at the start of every conversation and auto-loads relevant ones — no `/slash` invocation required. The kit ships 11 KIs covering capability discovery, page creation, marketplace search, deploy, personalized landing, booking, scroll-sequence, GEO readability, MCP package picking, CLI quick reference, and IDE-extension setup.
 

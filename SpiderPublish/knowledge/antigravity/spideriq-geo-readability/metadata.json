@@ -1,0 +1,15 @@
+{
+  "title": "Make a SpiderIQ Tenant Page LLM-Readable (GEO)",
+  "summary": "Make a tenant page LLM-readable for AI search engines (ChatGPT, Claude, Perplexity, Google AI Overviews) by enabling the W6+W7 GEO extension family — /llms.txt, RSS/Atom/JSON feeds, sitemap.xml + robots.txt, schema.org JSON-LD head injection, contextual menu (Copy as MD / JSON-LD / Open in ChatGPT), human/agent view toggle. Use whenever the user asks about 'AI search SEO', 'GEO', 'Generative Engine Optimization', 'llms.txt', 'schema.org JSON-LD', 'make my site visible to ChatGPT', 'AI overviews ranking', 'crawlable for LLMs', 'AI-search-friendly'. Single PATCH on content_settings.extensions enables six extensions / seven endpoints.",
+  "createdAt": "2026-05-08T00:00:00Z",
+  "updatedAt": "2026-05-08T00:00:00Z",
+  "references": [
+    "SpiderPublish/GEO.md",
+    "SpiderPublish/components/extension-opensearch-llms.json",
+    "SpiderPublish/components/extension-schema-injector.json",
+    "SpiderPublish/components/extension-rss-feeds.json",
+    "SpiderPublish/components/extension-sitemap-robots.json",
+    "SpiderPublish/components/extension-contextual-menu.json",
+    "SpiderPublish/components/tenant-setting-geo-toggle.json"
+  ]
+}

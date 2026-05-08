@@ -1,0 +1,12 @@
+{
+  "title": "Create a SpiderIQ Tenant Page",
+  "summary": "Create a new published page on a SpiderIQ tenant via the @spideriq/mcp-publish MCP server. Use whenever the user says 'create a page', 'add a page', 'new landing page', 'make a /pricing page', 'add an /about page', 'spin up a new section', or any page-creation request. Walks through reading the help reference, building the blocks[] payload with the correct shape (canonical block schema, no silent-accept anti-patterns), running the dry_run preview → confirm flow, publishing, applying a theme, and deploying to the Cloudflare edge.",
+  "createdAt": "2026-05-08T00:00:00Z",
+  "updatedAt": "2026-05-08T00:00:00Z",
+  "references": [
+    "SpiderPublish/AGENTS.md",
+    "SpiderPublish/components/block-component.json",
+    "SpiderPublish/components/block-rich-text.json",
+    "SpiderPublish/examples/build-and-deploy.sh"
+  ]
+}
