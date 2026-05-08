@@ -1,0 +1,11 @@
+{
+  "title": "Build a Scroll-Linked Hero from a Video",
+  "summary": "Build a cinematic scroll-scrubbed hero from a video file using ffmpeg frame extraction and the sys-scroll-sequence component. Use whenever the user asks for 'cinematic scroll', 'scroll-linked hero', 'video as background animation', 'frame-by-frame hero', 'scroll-driven animation', 'Apple-style scroll hero'. Walks through video upload, server-side ffmpeg frame extraction, sys-scroll-sequence component insertion, and deploy verification with the GSAP ScrollTrigger pattern.",
+  "createdAt": "2026-05-08T00:00:00Z",
+  "updatedAt": "2026-05-08T00:00:00Z",
+  "references": [
+    "SpiderPublish/skills/recipes/scroll-sequence/SKILL.md",
+    "SpiderPublish/components/scroll-sequence.json",
+    "SpiderPublish/examples/scroll-sequence.sh"
+  ]
+}

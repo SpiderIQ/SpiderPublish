@@ -1,0 +1,11 @@
+{
+  "title": "@spideriq/cli Quick Reference",
+  "summary": "Run SpiderIQ from the terminal via @spideriq/cli — auth flow, project binding, pages CRUD, marketplace search, deploy, output formats. Use whenever the user asks 'how do I run SpiderIQ from the terminal?', 'spideriq CLI commands', 'CLI for cron / CI / scripts', 'headless SpiderIQ', or any command-line / shell-script SpiderIQ request. Same primitives as MCP, no IDE required, supports YAML/MD output for token-efficient agent loops.",
+  "createdAt": "2026-05-08T00:00:00Z",
+  "updatedAt": "2026-05-08T00:00:00Z",
+  "references": [
+    "SpiderPublish/SURFACES.md",
+    "SpiderPublish/examples/check-auth.sh",
+    "SpiderPublish/examples/build-and-deploy.sh"
+  ]
+}

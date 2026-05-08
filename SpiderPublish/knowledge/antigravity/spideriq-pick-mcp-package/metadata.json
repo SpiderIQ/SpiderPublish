@@ -1,0 +1,10 @@
+{
+  "title": "Pick the Right @spideriq/mcp-* Package",
+  "summary": "Decide which @spideriq/mcp-* npm package to install for a SpiderIQ project. Use whenever the user asks 'which @spideriq/mcp do I install?', '@spideriq/mcp vs @spideriq/mcp-publish', 'kitchen-sink vs atomic MCP', 'why is the agent dropping tools?', 'tool budget for SpiderIQ', or any package-selection question. The answer is almost always @spideriq/mcp-publish for content + extension work; the kitchen-sink @spideriq/mcp is only for cross-domain agents that need every slice in one prompt.",
+  "createdAt": "2026-05-08T00:00:00Z",
+  "updatedAt": "2026-05-08T00:00:00Z",
+  "references": [
+    "SpiderPublish/SURFACES.md",
+    "SpiderPublish/.mcp.json"
+  ]
+}

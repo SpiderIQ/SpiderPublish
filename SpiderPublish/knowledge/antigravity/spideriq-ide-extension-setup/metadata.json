@@ -1,0 +1,12 @@
+{
+  "title": "Install + Set Up the SpiderPublish IDE Extension",
+  "summary": "Install and bind the SpiderPublish IDE extension (SpiderIQ.spideriq-publish) in VSCode, Cursor, Antigravity, Windsurf, or any VSCode-API-compatible editor. Use whenever the user asks 'install SpiderPublish in my IDE', 'VSCode extension for SpiderIQ', 'edit CMS like code', 'native diff for content', 'pull tenant content into editor', 'SpiderPublish: Pull / Push / Deploy commands', 'how do I use the spideriq-publish extension'. The extension wraps @spideriq/mcp-publish (87 tools) as a child process and renders into native VSCode UI — same primitives, click-driven instead of typed.",
+  "createdAt": "2026-05-08T00:00:00Z",
+  "updatedAt": "2026-05-08T00:00:00Z",
+  "references": [
+    "SpiderPublish/SURFACES.md",
+    "https://docs.spideriq.ai/extension",
+    "https://docs.spideriq.ai/extension/install",
+    "https://docs.spideriq.ai/extension/commands"
+  ]
+}
