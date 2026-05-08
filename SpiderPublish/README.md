@@ -1,12 +1,59 @@
 # SpiderPublish
 
-> AI-native headless CMS and site builder where pages pull live scraped data via IDAP — build, deploy, and personalize at scale through API, CLI, MCP and Native Skills in token-efficient YAML/MD format.
+> **AI-Native Agency OS for the agent-driven web.** CMS · CRM · workflows · booking · CRO · personalization · scraping · media — one runtime, MCP-native, every published tenant page dual-rendered for humans and LLMs.
 
-Build websites, blogs, landing pages, and personalized outreach pages — entirely through AI agents. No browser needed. Deploy to Cloudflare's edge in 2-5 seconds.
+The public Starter Kit for SpiderIQ. Drop into any project with `npx degit martinshein/SpideriQ-ai/SpiderPublish` — your resident LLM agent reads the kit cold and learns to drive the platform. Build websites, blogs, landing pages, and personalized outreach pages entirely through agents. No browser needed. Deploy to Cloudflare's edge in 2–5 seconds.
 
-**Current versions:** `@spideriq/cli@1.0.0`, `@spideriq/mcp-publish@1.0.0`, `@spideriq/core@1.0.0` — **105+ tools** (the atomic SpiderPublish slice: pages, posts, docs, templates, components, domains, media, directory, component propagation, section overrides, local upload, link audit, component preview, `whoami`). Prefer this over the kitchen-sink `@spideriq/mcp@1.0.0` — some IDE/LLM stacks silently drop tool injections above ~128 tools, and every tool schema burns LLM context on every turn.
+## What this actually is, in 30 seconds
 
-**New (Apr 2026):** block-payload validator now 422s the common `{type:'component', data:{slug}}` anti-pattern, `/auth/whoami` confirms your project binding, `content_audit_links` catches broken internal links before deploy, `component_preview` iframes a single component in ~100-300 ms, `auto_extract_css` rescues Tilda/Webflow inline `<style>` blocks, custom `category='header'|'footer'` components auto-suppress native chrome. See [LEARNINGS.md → Apr 2026 Triage](./LEARNINGS.md#apr-2026-triage).
+- **Content + extension slice of an AI-Native Agency OS.** Other slices (lead-gen, mail, gate, super-admin) ship from separate kits or via the dashboard.
+- **Multi-tenant runtime.** Each tenant gets its own custom domain, isolated content, and a per-client Worker on Cloudflare Workers for Platforms.
+- **IDAP-backed personalization.** `/lp/{slug}/{place_id}` URL pattern with merge tags fed by the scraping pipeline (~44k cities, business profiles, contacts).
+- **4-class component model.** `static` / `interactive` / `dynamic` / `extension` — drives renderer + editor + agent surface. See [CAPABILITIES.md](./CAPABILITIES.md).
+- **GEO-ready.** Every published tenant page can ship `/llms.txt` · `/feed.xml` · `/sitemap.xml` · schema.org JSON-LD · contextual menu · human/agent toggle. See [GEO.md](./GEO.md).
+- **Four ways to drive the runtime.** CLI · MCP · IDE extension · Skills. Same engine; pick by ergonomic fit. See [SURFACES.md](./SURFACES.md).
+
+## The 4-class component taxonomy
+
+| Kind | Renders where? | Examples |
+|---|---|---|
+| `static` | component HTML | hero-gradient, pricing-cards, faq-accordion |
+| `interactive` | HTML + JS in Shadow DOM | sys-timer-fixed-date, sys-popup-exit-intent |
+| `dynamic` | HTML + server-aggregated fetch | dynamic-form, dynamic-table, dynamic-chart, dynamic-map, list, item_details |
+| `extension` | renderer hook / page-injection / endpoint | sys-rss-feed, sys-geo-schema-injector, sys-sitemap-robots |
+
+Full taxonomy + per-kind rules in [CAPABILITIES.md](./CAPABILITIES.md#the-4-class-component-taxonomy).
+
+## What this kit replaces (typical agency stack)
+
+| Layer | Stack agencies cobble today | What this kit ships |
+|---|---|---|
+| CMS + page builder | Webflow, Framer, Squarespace + plugins | Multi-tenant Liquid templates on Cloudflare Workers for Platforms |
+| Personalized landing pages | Mutiny, Optimizely, Adobe Target | `/lp/{slug}/{place_id}` with IDAP merge tags |
+| Booking | Calendly, Acuity | SpiderBook (cal.com-backed) + `{% booking %}` Liquid tag |
+| CRO components | Privy, OptinMonster | `interactive` class — timer · exit-intent · social-proof · stock bar · sticky bar · pricing toggle |
+| Programmatic SEO directories | Webflow CMS hacks | `directory_*` tools + `/directory/{cat}/{city}/{listing}` |
+| Forms | Typeform, Tally | `dynamic-form` with phone-validated + address-autocomplete |
+| AI-search SEO | (no real product yet) | W6+W7 GEO family — `/llms.txt`, schema-injector, contextual menu, human/agent toggle |
+| Multi-tenant white-label | Webflow Workspaces | Workers-for-Platforms — real per-tenant isolation, 2–5s deploys |
+
+## For LLM agents reading this repo
+
+In order, shortest to deepest:
+
+1. [llms.txt](./llms.txt) — 56-line entry index
+2. [CAPABILITIES.md](./CAPABILITIES.md) — 11-surface index + 4-class taxonomy + what's in this kit vs elsewhere
+3. [SURFACES.md](./SURFACES.md) — pick CLI vs MCP vs IDE extension vs Skills (same engine, four rendering surfaces)
+4. [AGENTS.md](./AGENTS.md) — full tool catalog with payload schemas, error tables, common mistakes
+5. [CLAUDE.md](./CLAUDE.md) — Claude-Code-specific session-binding + Phase 11+12 multi-tenant safety contract
+6. [GEO.md](./GEO.md) — Generative Engine Optimization extension family
+7. [MERGE-TAGS.md](./MERGE-TAGS.md) — personalization vocabulary
+8. [skills/recipes/](./skills/recipes/) — 10 multi-step workflows (marketplace-search, scroll-sequence, tilda-migration, link-audit, directory, …)
+9. [LEARNINGS.md](./LEARNINGS.md) — gotchas + anti-patterns
+
+**Current versions:** `@spideriq/cli@1.7.0`, `@spideriq/mcp-publish@1.7.0` (87 tools — the atomic content + extension slice), `@spideriq/core@1.6.0`, `SpiderIQ.spideriq-publish@0.1.1` (IDE extension on Open VSX + VSCode Marketplace). Prefer `mcp-publish` over the kitchen-sink `@spideriq/mcp@1.7.0` (126 tools) — under the ~128-tool injection limit some IDE/LLM stacks enforce, and less context burn per turn.
+
+Continue reading for full architecture, tool catalog, and recipes →
 
 ## Quick Start (2 minutes)
 
