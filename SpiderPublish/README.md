@@ -11,7 +11,24 @@ The public Starter Kit for SpiderIQ. Drop into any project with `npx degit marti
 - **IDAP-backed personalization.** `/lp/{slug}/{place_id}` URL pattern with merge tags fed by the scraping pipeline (~44k cities, business profiles, contacts).
 - **4-class component model.** `static` / `interactive` / `dynamic` / `extension` — drives renderer + editor + agent surface. See [CAPABILITIES.md](./CAPABILITIES.md).
 - **GEO-ready.** Every published tenant page can ship `/llms.txt` · `/feed.xml` · `/sitemap.xml` · schema.org JSON-LD · contextual menu · human/agent toggle. See [GEO.md](./GEO.md).
-- **Four ways to drive the runtime.** CLI · MCP · IDE extension · Skills. Same engine; pick by ergonomic fit. See [SURFACES.md](./SURFACES.md).
+- **Four ways to drive the runtime.** Extension · MCP · CLI · API. Same engine; pick by ergonomic fit. See [SURFACES.md](./SURFACES.md) and [Four ways to drive](#four-ways-to-drive-the-runtime) below.
+
+## Four ways to drive the runtime
+
+Same engine; same MCP server; same auth; four front doors. Pick by ergonomic fit, not by feature — anything you can do with one, you can do with the others.
+
+| Surface | Best for | What you get | How to install |
+|---|---|---|---|
+| **IDE extension** (`SpiderIQ.spideriq-publish`) | Authoring multi-section pages where you want to *see* what changes before pushing | Pages/posts/components/templates as files on disk · native VSCode diff editor · git-style stage view · pre-push link audit · one-keystroke deploy · bundles `@spideriq/mcp-publish` so AI agents in the same IDE share the surface | [Open VSX](https://open-vsx.org/extension/SpiderIQ/spideriq-publish) (Cursor / Antigravity / Windsurf) or [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=SpiderIQ.spideriq-publish) (VS Code 1.85+) |
+| **MCP server** (`@spideriq/mcp-publish`) | LLM agents in chat (Claude Code, Cursor chat, Antigravity chat, Claude Desktop) | 87 tools registered as Language Model Tools · `dry_run`-defaulted destructive ops · YAML response format opt-in · same auth as the CLI | `.mcp.json` config (see [Quick Start](#quick-start-2-minutes)) |
+| **CLI** (`@spideriq/cli`) | Scripts, CI, terminal-first workflows, agency loops over many tenants | Same primitives as MCP/extension, plus `auth request --email`, `use --list`, batch ops · machine-readable `--format yaml\|json\|md` | `npx @spideriq/cli --help` (one-shot) or `npm i -g @spideriq/cli --registry=https://npm.spideriq.ai` |
+| **HTTP API** | Bespoke integrations, CRMs, server-side automation, anything outside an LLM/IDE | Raw REST under `/api/v1/dashboard/projects/{project_id}/...` · same Phase 11+12 dry_run/confirm_token gating · OpenAPI spec at `/api/v1/docs` | Bearer token + `curl` — see [examples/build-and-deploy.sh](./examples/build-and-deploy.sh) |
+
+> **The IDE extension is a thin UX layer on top of the MCP server.** When you install it, it spawns `@spideriq/mcp-publish` as a child process. So an AI agent operating in the same IDE is reading the *exact same* tools the human is clicking — there's no second code path. Anything one can do, both can. See [docs.spideriq.ai/extension](https://docs.spideriq.ai/extension) for the install guide and command reference.
+
+If you only learn one surface, learn the MCP server (it's the foundation). If you're authoring multiple sections in one session, layer the extension on top — native diffs catch mistakes the agent doesn't.
+
+---
 
 ## The 4-class component taxonomy
 
