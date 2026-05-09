@@ -44,6 +44,7 @@ Multi-tenant content management: pages, blog posts, docs, navigation, site setti
 | "What tool do I reach for?" | `content_get_playbook(intent)` — returns the canonical tool-call sequence for 30+ common intents |
 | Confirm which project my PAT is bound to | `get_whoami()` — returns `{client_id, project_name, email, scopes, token_expires_at, ...}` |
 | Find broken internal links before deploy | `content_audit_links()` — returns `broken[{path, source, reason}]` + `proposed_redirects` |
+| Audit a page before editing it (full picture, not just slugs) | `content_export_page(page_id, format?)` — page row + every component referenced (full body inlined: html_template/js/css/props_schema/dependencies/agent_meta/kind/layouts) + settings + domains + 10-rule audit. See [`recipes/audit-and-fix`](../../recipes/audit-and-fix/) |
 | Preview a single component without deploying | `component_preview(component_id, props, viewport?)` — returns Shadow-DOM-wrapped HTML ready for `<iframe srcdoc>` |
 | Port a Tilda/Webflow HTML section with inline `<style>` blocks | `content_create_component(..., auto_extract_css=true)` — server moves `<style>` into `css` field automatically |
 | Page with a custom header component (avoid double-chrome) | Mark the component with `category="header"` — renderer auto-suppresses the native section |
@@ -69,6 +70,31 @@ Phase G shipped the agent-discovery layer over the marketplace. Six new tools tu
 The 4 mutation tools default `dry_run=true` per starter-kit convention — call once for a preview + `confirm_token`, then call again with the token to commit.
 
 Full vocabulary (mood / palette / brand_fit / scene_type values + per-asset agent_meta keys) is in [`schema.yaml`](./schema.yaml) under `marketplace_v2_axes:`. Recipe: [`recipes/marketplace-search-and-insert`](../recipes/marketplace-search-and-insert/). Runnable example: [`examples/marketplace-search-and-insert.sh`](../../examples/marketplace-search-and-insert.sh).
+
+## May 2026 additions (v2.4.0) — Page export + audit envelope
+
+P2 of the Agent-Surface Hardening initiative. Added the audit-driven editing flow — instead of `content_get_page` (slug-only response) → 20 follow-up calls to discover what's actually on the page, an agent calls `content_export_page` once and gets the full picture plus a 10-rule audit walk.
+
+| Tool | Auth | Use case |
+|---|---|---|
+| `content_export_page` | dashboard | "Export this page so I can audit it before editing" — returns page row + every component (full body inlined) + settings + domains + a 10-rule `PageAuditor` walk. Three formats: `json` (default), `md` (text/markdown), `archive` (ZIP, VSCode-extension-compatible). |
+
+10 v1 audit rules grouped by scope:
+
+| Severity | Rule | Catches |
+|---|---|---|
+| `error` | `block.scroll_sequence_empty_frames` | scroll-sequence component bound with 0 frames |
+| `error` | `site.no_verified_primary_domain` | published pages have no public URL |
+| `warn` | `page.multiple_scroll_sequences` | 2+ scroll sequences on one page |
+| `warn` | `page.empty_seo_title` / `_description` | missing per-page SEO |
+| `warn` | `site.missing_favicon` / `_default_og_image` | missing site-level branding |
+| `warn` | `component.kind_null_with_dependencies` | latent Tier 3 — declares deps but `kind=NULL` |
+| `warn` | `component.global_empty_agent_meta` | global component invisible to marketplace search |
+| `warn` | `block.legacy_data_layout` / `_data_binding` | older block shape with nested `data.{layout,data_binding}` |
+| `info` | `site.no_analytics` | no GA / Plausible / custom head scripts |
+| `info` | `page.orphan_tree_node` | `parent_id` set but no siblings |
+
+Recipe: [`recipes/audit-and-fix`](../../recipes/audit-and-fix/). Runnable example: [`examples/content-export-and-audit.sh`](../../examples/content-export-and-audit.sh).
 
 ## Apr 2026 additions (v2.1.0)
 

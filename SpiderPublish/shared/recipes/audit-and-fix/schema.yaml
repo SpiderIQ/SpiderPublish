@@ -1,0 +1,76 @@
+name: audit-and-fix
+tier: 3
+description: >
+  Export a page with its self-contained envelope (page + components inlined +
+  settings + domains) plus a 10-rule PageAuditor walk. Parse the findings,
+  fix the most-confident ones at the source, repush. Closes the loop where
+  an AI agent edits a page without ever seeing what's already on it.
+
+  Tier 3 plugin shim — Node 18+ stdlib only, zero npm deps. Wraps the
+  export call + a parser that walks the audit envelope and returns
+  per-finding action suggestions.
+
+inputs:
+  page_id:
+    type: string
+    required: true
+    description: Page UUID. Get one from listPages or contentGetPage.
+  format:
+    type: string
+    required: false
+    enum: [json, md, archive]
+    default: json
+    description: >
+      json (default) — flat envelope, JSON.
+      md — human-readable Markdown (text/markdown).
+      archive — ZIP byte stream, VSCode-extension-compatible layout.
+
+one_shot:
+  - id: export
+    tool: content_export_page
+    payload:
+      page_id: "{{inputs.page_id}}"
+      format: "{{inputs.format}}"
+    returns:
+      page: object
+      components: "array<{slug, version, html_template, js, css, props_schema, dependencies, agent_meta, kind, layouts}>"
+      settings: object
+      domains: array
+      audit:
+        summary: "{errors: int, warnings: int, info: int}"
+        site_level: "array<{rule_id, severity, scope, target, message, suggested_fix?}>"
+        page_level: array
+        block_level: array
+        component_level: array
+      exported_at: string
+      spideriq_version: string
+
+# Follow-up actions — agents decide based on the audit findings
+follow_up:
+  fix_empty_frames:
+    when: "audit.block_level[].rule_id == 'block.scroll_sequence_empty_frames'"
+    how: "content_update_page(page_id=<id>, blocks=<edited>) — set props.frames (array of URLs) OR props.count + props.base_url + props.pattern on the offending block"
+
+  fix_seo_holes:
+    when: "audit.page_level[].rule_id in ('page.empty_seo_title', 'page.empty_seo_description')"
+    how: "content_update_page(page_id=<id>, seo_title=..., seo_description=...) — 50–60 chars title, 140–160 chars description"
+
+  fix_site_branding:
+    when: "audit.site_level[].rule_id in ('site.missing_favicon', 'site.missing_default_og_image')"
+    how: "content_update_settings(favicon_url=..., default_og_image_url=...) — public 32×32 PNG / 1200×630 PNG"
+
+  fix_no_primary_domain:
+    when: "audit.site_level[].rule_id == 'site.no_verified_primary_domain'"
+    how: "content_add_domain(domain=...) then DNS verification + content_set_primary_domain(domain=...)"
+
+  fix_latent_tier3:
+    when: "audit.component_level[].rule_id == 'component.kind_null_with_dependencies'"
+    how: "content_update_component(component_id=<id>, kind=...) — one of static / interactive / dynamic / extension"
+
+  fix_legacy_block_shape:
+    when: "audit.block_level[].rule_id in ('block.legacy_data_layout', 'block.legacy_data_binding')"
+    how: "content_update_page(page_id=<id>, blocks=<edited>) — move data.layout to top-level layout; same for data_binding"
+
+  round_trip_via_extension:
+    when: "user wants to edit on disk with native VSCode diffs"
+    how: "content_export_page(page_id=<id>, format='archive') → write ZIP to disk → unzip into a working directory matching the SpiderPublish extension's local registry shape → edit page.json / components/<slug>@<version>.json → run 'SpiderPublish: Push Content' from the extension"

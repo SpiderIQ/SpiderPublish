@@ -2,6 +2,25 @@
 
 Things that cause silent failures or broken deploys. Read before building.
 
+## May 2026 — Audit before edit (P2 Page Export + PageAuditor, 2026-05-09)
+
+**The trap:** if your only read tool is `content_get_page`, you get back block slugs (e.g. `vp-hero`, `vp-flying-sequence`) without the component bodies that explain what each block is. Editing into a page like that — without a path to surface broken sections — is how a "replace one scroll-video with another" task becomes "the new section is empty AND the old one is still there."
+
+**The fix:** call `content_export_page(page_id)` first. The single response carries the page row + every component referenced by `page.blocks` (full body inlined: `html_template`, `js`, `css`, `props_schema`, `dependencies`, `agent_meta`, `kind`, `layouts`) + site settings + domains + a 10-rule `PageAuditor` walk grouped by scope (site/page/block/component). Three formats: `json` (default, parse with jq / your JSON parser), `md` (paste into chat for human review), `archive` (ZIP — round-trip through the SpiderPublish VSCode extension's local registry).
+
+**Most common findings on real production pages:**
+
+| Finding | What it means | How to fix |
+|---|---|---|
+| `block.scroll_sequence_empty_frames` (error) | A scroll-sequence component is bound to a block but `props.frames` is empty/missing — the section will render blank at runtime | Set `props.frames` (array of URLs) OR `props.count` + `props.base_url` + `props.pattern` |
+| `component.kind_null_with_dependencies` (warn) | Component declares dependencies (e.g. `gsap`, `gsap/ScrollTrigger`) but `kind=NULL` — the marketplace search can't find it, the authoring rules can't be retrieved | `content_update_component(component_id, kind=…)` — one of `static` / `interactive` / `dynamic` / `extension` |
+| `page.empty_seo_title` / `page.empty_seo_description` (warn) | Search engines + social shares fall back to the page `title` (often less specific) | `content_update_page(page_id, seo_title=…, seo_description=…)` |
+| `page.multiple_scroll_sequences` (warn) | 2+ scroll-sequence components on one page — each loads ~10 MB of frames; usually means an old draft section was never deleted | Decide which is canonical and delete the others |
+
+Recipe: [`recipes/audit-and-fix`](../recipes/audit-and-fix/). Runnable example: [`examples/content-export-and-audit.sh`](../examples/content-export-and-audit.sh).
+
+**When to call:** before any non-trivial page edit. Cheap (read-only, ~50–500 ms per page). Idempotent. Available via CLI (`spideriq content export <page_id>`), MCP (`content_export_page(...)`), or raw HTTP (`GET /api/v1/dashboard/projects/{pid}/content/pages/{id}/export`).
+
 ## Apr 2026 Triage — 5 silent-failure modes now caught (2026-04-24)
 
 Consolidated from 8 agent session reports across 6 live projects. Half were silent-accept bugs (200 OK + blank page); half were opaque defaults. All fixed.
