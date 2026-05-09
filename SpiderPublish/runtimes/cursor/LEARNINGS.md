@@ -2,6 +2,37 @@
 
 Things that cause silent failures or broken deploys. Read before building.
 
+## May 2026 — Pages can be locked, and 423 means stop (P4 Page Locking + Versions, 2026-05-09)
+
+**The trap:** two agents (or an agent + a dashboard user) edit the same page concurrently — one mid-review, one mid-launch — and the later write silently overwrites the earlier one. There's no "this page is being reviewed" signal, just a `200 OK` and a clobbered page.
+
+**The fix:** call `content_lock_page({page_id, reason})` when you hand a page off for client review or scheduled launch. Other agents and dashboard users see **HTTP 423 Locked** on every mutation with this body:
+
+```json
+{
+  "detail": {
+    "error": "page_locked",
+    "message": "Page is locked by api:cli_xxx.",
+    "locked_by_actor_id": "api:cli_xxx",
+    "locked_at": "2026-05-09T21:11:00Z",
+    "locked_reason": "client review week of 2026-05-12",
+    "unlock_endpoint": "/api/v1/dashboard/projects/cli_xxx/content/pages/<id>/unlock"
+  }
+}
+```
+
+**Recovery rules — read before retrying:**
+
+1. **Don't loop on 423 retry-without-backoff.** The lock provenance won't change until someone explicitly unlocks. A blind retry burns rate-limit budget and produces no progress.
+2. **If `locked_by_actor_id` matches your `actor_id`** — call `content_unlock_page({page_id})`. Same actor, no force needed.
+3. **If you're super_admin or brand_admin and the lock-holder is unavailable** — call `content_unlock_page({page_id, force: true})`. The server emits an audit row.
+4. **Otherwise** — back off. Read `locked_reason`; if it names a deadline ("client review week of 2026-05-12"), respect it. The lock exists to enforce a real workflow.
+5. **You can always read history during the lock window.** `content_list_page_versions(page_id)` and `content_get_page_version(page_id, N)` are read-only and work on locked pages — useful if you want to inspect snapshot state without mutating.
+
+**Versions API — every publish writes a snapshot.** `content_list_page_versions({page_id})` returns the log newest-first with `block_count` + `blocks_size` + `change_summary` (no heavy `blocks` payload — fetch it on demand via `content_get_page_version`). `content_restore_page_version({page_id, version_number, dry_run?, confirm_token?, force?})` applies a historical snapshot back to the live page. Restore goes through the same Phase 11+12 dry_run/confirm_token gate as publish/delete and respects the lock (override with `force=true` if you have the role).
+
+Recipe: [`recipes/lock-during-review`](../recipes/lock-during-review/). All 5 verbs in `@spideriq/mcp-publish@1.11.0+` and `@spideriq/mcp@1.11.0+`.
+
 ## May 2026 — Audit before edit (P2 Page Export + PageAuditor, 2026-05-09)
 
 **The trap:** if your only read tool is `content_get_page`, you get back block slugs (e.g. `vp-hero`, `vp-flying-sequence`) without the component bodies that explain what each block is. Editing into a page like that — without a path to surface broken sections — is how a "replace one scroll-video with another" task becomes "the new section is empty AND the old one is still there."

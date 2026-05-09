@@ -1,0 +1,95 @@
+name: lock-during-review
+tier: 3
+description: >
+  Lock a page against further edits during client review or scheduled launch.
+  Other agents and dashboard users see 423 Locked with the lock provenance and
+  an unlock_endpoint URL until the lock-holder (or super_admin via force=true)
+  unlocks. Exposes the matching version-restore surface — every publish writes
+  a snapshot in content_page_versions, restorable via the dry_run/confirm_token
+  gate.
+
+  Tier 3 plugin shim — Node 18+ stdlib only, zero npm deps. Wraps lock /
+  unlock / list_versions / get_version / restore in one mental model.
+
+inputs:
+  page_id:
+    type: string
+    required: true
+    description: Page UUID. Get one from listPages or contentGetPage.
+  reason:
+    type: string
+    required: false
+    description: >
+      Why the page is being locked. Surfaced verbatim in the 423 envelope so
+      the next agent knows whether to back off or override.
+      Example: "client review week of 2026-05-12".
+
+# Primary action — lock
+one_shot:
+  - id: lock
+    tool: content_lock_page
+    payload:
+      page_id: "{{inputs.page_id}}"
+      reason: "{{inputs.reason}}"
+    returns:
+      id: string
+      slug: string
+      is_locked: boolean
+      locked_by_actor_id: string
+      locked_at: string
+      locked_reason: string
+
+# 423 envelope shape — for handlers that catch the rejection
+errors:
+  page_locked:
+    http_status: 423
+    body_shape:
+      detail:
+        error: "page_locked"
+        message: string
+        locked_by_actor_id: string
+        locked_at: string
+        locked_reason: string
+        unlock_endpoint: string
+    recovery:
+      back_off: "Read locked_reason. If it names a deadline, wait."
+      unlock_self: "If your actor_id matches locked_by_actor_id, call content_unlock_page."
+      force_unlock: "If you have super_admin or brand_admin role, call content_unlock_page(force=true). Otherwise: 403."
+      inspect_history: "Versions endpoints (list / get) are read-only and work on locked pages."
+
+# Follow-up actions agents may take
+follow_up:
+  unlock_my_lock:
+    when: "you locked it AND the review is done"
+    how: "content_unlock_page(page_id=<id>) — same actor_id is required, no force needed"
+
+  force_unlock_someone_else:
+    when: "lock-holder unavailable AND you are super_admin or brand_admin"
+    how: "content_unlock_page(page_id=<id>, force=true) — emits an audit row"
+
+  list_history_during_lock:
+    when: "you want to review versions while the lock is held"
+    how: "content_list_page_versions(page_id=<id>) — read-only; works on locked pages"
+
+  restore_to_pre_review:
+    when: "client rejected the changes and wants the prior version back"
+    how: |
+      1. content_lock_page(page_id=<id>, reason='restore in progress') — prevent concurrent edits during the dry-run/confirm window
+      2. content_list_page_versions(page_id=<id>) — pick the target version_number
+      3. content_get_page_version(page_id=<id>, version_number=N) — preview the snapshot
+      4. content_restore_page_version(page_id=<id>, version_number=N, dry_run=true, force=true) — preview envelope + confirm_token
+      5. content_restore_page_version(page_id=<id>, version_number=N, confirm_token=<from step 4>, force=true) — applies; appends new version row
+      6. content_unlock_page(page_id=<id>) — release after restore
+
+# Available verbs (canonical list — for agents that need the full surface)
+verbs:
+  content_lock_page:
+    description: Lock a page. Idempotent — re-locking refreshes reason + locked_at.
+  content_unlock_page:
+    description: Unlock a page. Default — only the lock-holder. force=true requires super_admin or brand_admin.
+  content_list_page_versions:
+    description: List snapshots (newest first) — block_count + blocks_size + change_summary, no heavy blocks.
+  content_get_page_version:
+    description: Single snapshot in full (with blocks) — diff against current before restore.
+  content_restore_page_version:
+    description: Phase 11+12 dry_run/confirm_token gated. Appends new version row recording the restore.
