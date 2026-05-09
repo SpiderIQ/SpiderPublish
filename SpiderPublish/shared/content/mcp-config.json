@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "spideriq-publish": {
+      "command": "npx",
+      "args": ["-y", "@spideriq/mcp-publish"],
+      "env": {
+        "SPIDERIQ_FORMAT": "yaml",
+        "npm_config_registry": "https://npm.spideriq.ai"
+      }
+    }
+  }
+}

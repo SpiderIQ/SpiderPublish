@@ -1,0 +1,16 @@
+{
+  "_description": "Reference: sys-geo-human-agent-toggle (W7.3) — per-tenant SETTING (not a marketplace component, not a block). Adds a top-level `content_settings.geo_toggle_enabled` boolean. When ON, every rendered page exposes a 'human view / agent view' switcher that toggles between the styled HTML and an LLM-friendly Markdown projection of the same content.",
+  "_block_type": "tenant-setting",
+  "_kind": "extension",
+  "_renderer_pattern": "page-injection",
+  "_min_renderer_version": "v2.78.0",
+  "_no_marketplace_row": "W7.3 ships as a top-level boolean column, NOT a content_components row. There is nothing to insert into a page's blocks[]. Toggle from the dashboard at /dashboard/content/settings or via PATCH /api/v1/dashboard/content/settings.",
+
+  "_settings_shape": {
+    "geo_toggle_enabled": true
+  },
+
+  "_dashboard_save_pattern": {
+    "_note": "Boolean toggles need a dedicated save handler — the generic falsy-collapse handler at apps/web/src/routes/client/content/settings.tsx ships `false` as `undefined` (the toggle gets stuck ON). Use the dedicated handleSaveAgentNative variant. See catalog/LEARNINGS.md → 'Settings dashboard handleSave collapses boolean false to undefined'."
+  }
+}

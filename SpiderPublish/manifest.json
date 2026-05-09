@@ -1,0 +1,186 @@
+{
+  "$schema": "./scripts/manifest.schema.json",
+  "version": "1.0.0",
+  "description": "SpiderPublish Starter Kit — runtime + skill registry. shared/ is the source of truth; runtimes/ is emitted by scripts/build.ts.",
+  "runtimes": [
+    {
+      "id": "claude-code",
+      "label": "Claude Code (CLI / VSCode / JetBrains)",
+      "root": "runtimes/claude-code",
+      "supports": ["mcp", "claude-skills"],
+      "main_doc": "CLAUDE.md",
+      "skill_path": ".claude/skills/{id}/SKILL.md",
+      "skill_format": "claude-skill"
+    },
+    {
+      "id": "antigravity",
+      "label": "Google Antigravity",
+      "root": "runtimes/antigravity",
+      "supports": ["mcp", "antigravity-knowledge-items"],
+      "main_doc": "AGENTS.md",
+      "skill_path": "knowledge-items/{ki_index:02d}-spideriq-{id}/artifacts/workflow.md",
+      "skill_format": "antigravity-ki"
+    },
+    {
+      "id": "cursor",
+      "label": "Cursor",
+      "root": "runtimes/cursor",
+      "supports": ["mcp", "cursor-rules"],
+      "main_doc": "AGENTS.md",
+      "skill_path": ".cursor/rules/{id}.mdc",
+      "skill_format": "cursor-rule"
+    },
+    {
+      "id": "claude-desktop",
+      "label": "Claude Desktop",
+      "root": "runtimes/claude-desktop",
+      "supports": ["mcp"],
+      "main_doc": "README.md",
+      "skill_path": null,
+      "skill_format": null
+    }
+  ],
+  "skills": [
+    {
+      "id": "scroll-sequence",
+      "kind": "recipe",
+      "ki_index": 1,
+      "title": "Build a Scroll-Linked Hero from a Video",
+      "summary": "Build a cinematic scroll-scrubbed hero from a video file using ffmpeg frame extraction and the sys-scroll-sequence component. Use whenever the user asks for 'cinematic scroll', 'scroll-linked hero', 'video as background animation', 'frame-by-frame hero', 'scroll-driven animation', 'Apple-style scroll hero'."
+    },
+    {
+      "id": "marketplace-search-and-insert",
+      "kind": "recipe",
+      "ki_index": 2,
+      "title": "Search the SpiderIQ Component Marketplace",
+      "summary": "Search the curated SpiderIQ component marketplace by kind / mood / palette / brand_fit_tags / scene_type, then insert a result into a page. Use whenever the user asks for 'a hero section', 'a CTA block', 'a pricing component', or any 'find me a section / block / component for ...' request."
+    },
+    {
+      "id": "marketplace-suggest-agent-meta",
+      "kind": "recipe",
+      "ki_index": 3,
+      "title": "Suggest agent_meta for Marketplace Assets (LLM-Inferred)",
+      "summary": "Use the SpiderGate-powered marketplace_suggest_agent_meta tool to infer mood / palette / brand_fit_tags / scene_type / agent_meta for a marketplace asset (component, bg-video, site template). Two-step: suggest → review → apply via set_*_agent_meta. Use when uploading a fresh marketplace asset that needs taxonomy."
+    },
+    {
+      "id": "component-update-and-propagate",
+      "kind": "recipe",
+      "ki_index": 4,
+      "title": "Update a Shared Component and Propagate Across All Pages",
+      "summary": "Update a shared component AND repoint every consuming page's block pin in one MCP call + one confirm_token (v2.88.0+). Replaces the ~10-request choreography. Use whenever you change a component everyone is using."
+    },
+    {
+      "id": "component-rollback",
+      "kind": "recipe",
+      "ki_index": 5,
+      "title": "Roll Back a Shared Component to an Earlier Version",
+      "summary": "Restore a component to an earlier version's content. Creates a new forward version + repoints pages. Pairs with component-update-and-propagate for undo (v2.88.0+). Use whenever a component change broke pages."
+    },
+    {
+      "id": "preview-iteration",
+      "kind": "recipe",
+      "ki_index": 6,
+      "title": "Safe Edit Loop with Preview → Confirm",
+      "summary": "Iterate on a page or template safely: template_preview (no state mutation) → browser-check → publish (dry_run → confirm_token). The default safe authoring loop."
+    },
+    {
+      "id": "bulk-media-upload",
+      "kind": "recipe",
+      "ki_index": 7,
+      "title": "Upload a Local Directory of Files via Multipart POST",
+      "summary": "Upload a local directory of files directly via multipart POST. Kills the pinggy/catbox/serveo tunnel workaround. Use whenever you need to push frame sequences, image sets, or asset bundles to SpiderMedia from your local disk."
+    },
+    {
+      "id": "directory",
+      "kind": "recipe",
+      "ki_index": 8,
+      "title": "Build a Programmatic Directory (Category / City / Listing)",
+      "summary": "Build /directory/{category}/{city}/{listing} pages programmatically: create category → bulk-upsert listings (or import from IDAP) → deploy. Use for SEO directories with thousands of generated pages."
+    },
+    {
+      "id": "link-audit",
+      "kind": "recipe",
+      "ki_index": 9,
+      "title": "Audit Internal Links Before Deploy",
+      "summary": "Scan the tenant's published surface for broken internal links (404s, redirects, mistyped slugs) before deploy. Use whenever you finish authoring and want a pre-deploy sanity check."
+    },
+    {
+      "id": "tilda-migration",
+      "kind": "recipe",
+      "ki_index": 10,
+      "title": "Migrate a Tilda / Webflow / Lovable Site to SpiderPublish",
+      "summary": "End-to-end migration from a Tilda export (or Webflow / Lovable export): section → component → page → publish, with auto_extract_css for one-file imports. Use whenever you're porting an existing static site into the SpiderPublish CMS."
+    },
+    {
+      "id": "content-platform",
+      "kind": "core",
+      "ki_index": 11,
+      "title": "SpiderPublish Content Platform — Full MCP Surface",
+      "summary": "Full content_* / directory_* / playbook_* MCP namespace overview: pages, posts, docs, navigation, settings, components, domains, directory pages, component site-wide propagation, section overrides. Use whenever you need the full content-platform tool catalog at a glance."
+    },
+    {
+      "id": "booking",
+      "kind": "core",
+      "ki_index": 12,
+      "title": "SpiderBook — Appointment-Booking MCP Surface",
+      "summary": "Full booking_* MCP namespace: cal.com-backed flow authoring, services, bookings, template library. Ships /book/{flow_id} route + {% booking %} Liquid tag. Use whenever the user asks for 'add appointment booking', 'calendar embed', 'scheduling flow', 'cal.com integration'."
+    },
+    {
+      "id": "templates-engine",
+      "kind": "core",
+      "ki_index": 13,
+      "title": "Liquid Templates + Themes + Edge Deploy",
+      "summary": "template_* / content_deploy_site_* MCP surface for Liquid templates, themes, and Cloudflare edge deploy. Use whenever you need to apply a theme, override a section, or deploy to production with the Phase 11+12 readiness → preview → confirm → poll pipeline."
+    },
+    {
+      "id": "upload-host-media",
+      "kind": "core",
+      "ki_index": 14,
+      "title": "SpiderMedia — Image / File / Video Upload",
+      "summary": "media_* MCP namespace: upload images, files, videos to the SpiderMedia CDN. Includes upload_local_file / upload_local_directory for agents with filesystem access (no tunnel required)."
+    },
+    {
+      "id": "agentdocs",
+      "kind": "core",
+      "ki_index": 15,
+      "title": "AgentDocs — Versioned Documentation Projects",
+      "summary": "agentdocs_* MCP namespace: build versioned documentation projects (Mintlify-style) with sidebar config, MDX pages, full-text search, and edge deploy."
+    },
+    {
+      "id": "create-page",
+      "kind": "guide",
+      "ki_index": 16,
+      "title": "Create a SpiderIQ Tenant Page",
+      "summary": "Create a new published page on a SpiderIQ tenant via the @spideriq/mcp-publish MCP server. Walks through reading the help reference, building the blocks[] payload (canonical block schema, no silent-accept anti-patterns), running dry_run preview → confirm, publishing, theming, and deploying. Use for any 'create a page', 'add a page', 'new landing page' request."
+    },
+    {
+      "id": "personalized-landing",
+      "kind": "guide",
+      "ki_index": 17,
+      "title": "Build a SpiderIQ Personalized Landing Page",
+      "summary": "Build a personalized landing page via /lp/{slug}/{place_id} with merge tags fed by IDAP. Walks through dynamic_landing template, merge-tag vocabulary ({{ lead.name }}, {{ lead.city }}), resolve_lead lookup, and end-to-end deploy. Use for 'a personalized outreach page', 'a /lp/ page', 'one page per business', 'cold-outreach landing'."
+    },
+    {
+      "id": "pick-mcp-package",
+      "kind": "guide",
+      "ki_index": 18,
+      "title": "Pick the Right @spideriq/mcp-* Package",
+      "summary": "Decide which @spideriq/mcp-* npm package to install. Use whenever the user asks '@spideriq/mcp vs @spideriq/mcp-publish', 'kitchen-sink vs atomic MCP', 'why is the agent dropping tools?'. Almost always the answer is @spideriq/mcp-publish; the kitchen-sink @spideriq/mcp is only for cross-domain agents."
+    },
+    {
+      "id": "cli-quick-reference",
+      "kind": "guide",
+      "ki_index": 19,
+      "title": "@spideriq/cli Quick Reference",
+      "summary": "Run SpiderIQ from the terminal via @spideriq/cli — auth flow, project binding, pages CRUD, marketplace search, deploy, output formats. Same primitives as MCP, no IDE required, supports YAML/MD output for token-efficient agent loops."
+    },
+    {
+      "id": "ide-extension-setup",
+      "kind": "guide",
+      "ki_index": 20,
+      "title": "Install + Set Up the SpiderPublish IDE Extension",
+      "summary": "Install + bind the SpiderPublish IDE extension (SpiderIQ.spideriq-publish) in VSCode, Cursor, Antigravity, Windsurf. Three artifacts: install.md (extension + auth + project binding), pull-and-edit.md (working tenant content as files + native diff + stage), push-and-deploy.md (5-phase push pipeline + Deploy Site + link audit). The extension wraps @spideriq/mcp-publish (87 tools) as a child process — same primitives, click-driven instead of typed.",
+      "multi_artifact": true
+    }
+  ]
+}

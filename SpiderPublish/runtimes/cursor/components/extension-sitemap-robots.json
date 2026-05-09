@@ -1,0 +1,31 @@
+{
+  "_description": "Reference: sitemap.xml + robots.txt extensions (W6.2). NOT page-blocks — renderer-hook extensions that auto-expose `/sitemap.xml` (existing) and `/robots.txt` (NEW W6.2) on every published tenant site. Configured via content_settings.extensions.{sitemap,robots}.",
+  "_block_type": "extension",
+  "_kind": "extension",
+  "_renderer_pattern": "renderer-hook",
+  "_min_renderer_version": "v2.78.0",
+  "_no_block_needed": "Site-wide extensions; no page-block markup.",
+
+  "_settings_shape": {
+    "extensions": {
+      "sitemap": {
+        "enabled": true,
+        "include_pages": true,
+        "include_posts": true,
+        "include_docs": true,
+        "lastmod_strategy": "updated_at"
+      },
+      "robots": {
+        "enabled": true,
+        "allow_all": true,
+        "disallow_paths": ["/admin", "/private"],
+        "extra_lines": ["Sitemap: https://example.com/sitemap.xml"]
+      }
+    }
+  },
+
+  "_endpoints": [
+    { "path": "/sitemap.xml", "format": "sitemap.org XML", "content_type": "application/xml" },
+    { "path": "/robots.txt",  "format": "robots.txt",      "content_type": "text/plain"      }
+  ]
+}

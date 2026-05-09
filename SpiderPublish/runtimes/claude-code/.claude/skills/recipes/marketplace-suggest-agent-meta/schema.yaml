@@ -1,0 +1,92 @@
+name: marketplace-suggest-agent-meta
+tier: 2
+description: >
+  Suggest mood / palette / brand_fit_tags / scene_type / agent_meta for
+  a freshly uploaded marketplace asset using the SpiderGate-powered
+  inference engine, then apply via the gated set_*_agent_meta tools.
+  Two-step suggest → review → apply pattern. Output is validated against
+  locked Pydantic enums BEFORE return — off-vocab values dropped.
+
+inputs:
+  asset_type:
+    type: string
+    required: true
+    hint: "One of: bg_video | component | site_template"
+  slug:
+    type: string
+    required: true
+    hint: "Asset slug (e.g. raindrops-tokyo-street, hero-bold-default, agency-minimal)"
+  apply_threshold:
+    type: string
+    default: "auto_apply"
+    hint: >
+      Which confidence tier to apply: 'auto_apply' (≥0.75 + vocab match
+      only — strictest) or 'auto_apply,review' (also apply ≥0.55 with
+      human eyeball). 'drop' is never applied.
+
+steps:
+  - id: suggest
+    description: Run the inference engine for one asset.
+    tool: marketplace_suggest_agent_meta
+    args:
+      asset_type: "{{ inputs.asset_type }}"
+      slug: "{{ inputs.slug }}"
+    output: envelope
+
+  - id: review
+    description: >
+      Inspect envelope.confidence_per_key — each entry has action ∈
+      {auto_apply, review, drop}. Filter values that match
+      apply_threshold. Drop confidence: drop entries are already filtered
+      out of proposed_universal_axes / proposed_agent_meta.
+    output: trusted_values
+
+  - id: dry_run_apply
+    description: >
+      Preview the apply via the matching set_*_agent_meta tool.
+      Returns a confirm_token.
+    tool: "set_{{ inputs.asset_type }}_agent_meta"
+    args:
+      slug: "{{ inputs.slug }}"
+      mood: "{{ trusted_values.proposed_universal_axes.mood }}"
+      palette: "{{ trusted_values.proposed_universal_axes.palette }}"
+      brand_fit_tags: "{{ trusted_values.proposed_universal_axes.brand_fit_tags }}"
+      scene_type: "{{ trusted_values.proposed_universal_axes.scene_type }}"
+      agent_meta: "{{ trusted_values.proposed_agent_meta }}"
+      dry_run: true
+    output: preview
+
+  - id: confirm_apply
+    description: Commit using confirm_token from preview.
+    tool: "set_{{ inputs.asset_type }}_agent_meta"
+    args:
+      slug: "{{ inputs.slug }}"
+      confirm_token: "{{ preview.confirm_token }}"
+    output: applied
+
+outputs:
+  applied_keys:
+    type: array
+    hint: List of axes successfully written.
+  dropped_keys:
+    type: array
+    hint: From envelope.dropped_keys — off-vocab values the engine rejected.
+  cost_usd:
+    type: number
+    hint: From envelope.usage.cost_usd — typically <$0.01 per call.
+  agent_meta_source:
+    type: string
+    hint: Always 'llm_inferred' after this recipe runs.
+
+notes: |
+  - This recipe is for NEW asset uploads where metadata is empty. For
+    existing labeled assets, use marketplace-search-and-insert instead.
+  - confidence_per_key tiers: auto_apply (≥0.75 + vocab match) is safe
+    to apply directly; review (≥0.55) deserves a human eyeball; drop
+    (<0.55 or off-vocab) is already excluded from the proposals.
+  - The apply tool stamps agent_meta_source='llm_inferred'. Future
+    bulk re-runs from the slice 4 pipeline can re-overwrite these
+    rows; human edits flip them to 'human_curated' which is sticky.
+  - Cost is metered — typically <$0.01 per call. The Anthropic API
+    payload limit is 32 MB; the inference service uses bounded image
+    extraction (~50-300 KB stills) so request size is never a risk.

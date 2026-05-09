@@ -1,0 +1,16 @@
+{
+  "name": "spideriq-starter-kit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SpiderPublish Starter Kit build pipeline — emits per-runtime trees from shared/ source.",
+  "scripts": {
+    "build": "tsx scripts/build.ts",
+    "build:check": "tsx scripts/build.ts && git diff --quiet runtimes/ || (echo 'BUILD DRIFT — runtimes/ differs from committed state'; exit 1)"
+  },
+  "devDependencies": {
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "zod": "3.25.76",
+    "@types/node": "22.18.13"
+  }
+}

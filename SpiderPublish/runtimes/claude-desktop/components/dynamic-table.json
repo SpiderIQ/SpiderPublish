@@ -1,0 +1,28 @@
+{
+  "_description": "Reference: dynamic table block (W4.2). Renders any collection (posts/docs/IDAP businesses/etc.) as a sortable, filterable table with 4 column-format types (text/date/number/link).",
+  "_block_type": "dynamic",
+  "_kind": "dynamic",
+  "_layouts_available": ["compact", "comfortable", "minimal", "card"],
+  "_min_renderer_version": "v2.78.0",
+
+  "id": "b-table-1",
+  "type": "component",
+  "component_slug": "table",
+  "component_version": "1.0.0",
+  "layout": "comfortable",
+  "data_binding": {
+    "source_id": "posts",
+    "filter": {},
+    "sort": { "field": "published_at", "direction": "desc" },
+    "limit": 25,
+    "field_select": ["title", "published_at", "author_name", "url"]
+  },
+  "props": {
+    "columns": [
+      { "field": "title", "label": "Title", "format": "link", "link_field": "url" },
+      { "field": "author_name", "label": "Author", "format": "text" },
+      { "field": "published_at", "label": "Published", "format": "date", "date_format": "medium" }
+    ],
+    "empty_state_text": "No posts yet."
+  }
+}

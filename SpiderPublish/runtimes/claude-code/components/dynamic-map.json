@@ -1,0 +1,50 @@
+{
+  "_description": "Reference: dynamic map block (W5.2) — multi-provider geolocation map. Default provider is Leaflet+OSM (no key required, works for every tenant out of the box). Mapbox + Google are opt-in alternatives that require per-tenant keys configured in `content_settings.map_providers` (Fernet-encrypted at rest in the new W3.3 column). Multi-provider soft-fall-back at the SERVER boundary: when a tenant requests `provider: 'mapbox'` but their `content_settings.map_providers.mapbox` token is missing, the renderer downgrades to Leaflet+OSM tiles and emits a `provider_fallback` log instead of black-screening.",
+  "_block_type": "dynamic",
+  "_kind": "dynamic",
+  "_layouts_available": ["standalone", "split-50-50", "stacked", "compact"],
+  "_min_renderer_version": "v2.79.0",
+  "_provider_decision": "Per §13.3=B LOCKED: Leaflet default · Mapbox opt-in · Google opt-in. Never bundle Mapbox or Google client libraries in the core renderer — they load lazily on first map block render only when the tenant has the matching key.",
+
+  "id": "b-map-1",
+  "type": "component",
+  "component_slug": "map",
+  "component_version": "1.0.0",
+  "layout": "standalone",
+  "data_binding": {
+    "source_id": "idap.businesses",
+    "filter": { "country_code": "DE" },
+    "sort": { "field": "rating", "direction": "desc" },
+    "limit": 100,
+    "field_select": ["name", "lat", "lng", "address", "url", "rating"]
+  },
+  "props": {
+    "provider": "leaflet",
+    "_provider_options": {
+      "leaflet": "Default. OpenStreetMap tiles. No key. Works on every tenant.",
+      "mapbox": "Requires content_settings.map_providers.mapbox token. Falls back to leaflet on missing key.",
+      "google": "Requires content_settings.map_providers.google_maps + google_signing_secret (Maps Static needs HMAC signed requests). Falls back to leaflet on missing key."
+    },
+    "lat_field": "lat",
+    "lng_field": "lng",
+    "marker_title_field": "name",
+    "marker_url_field": "url",
+    "popup_fields": ["address", "rating"],
+    "initial_zoom": 11,
+    "auto_fit_bounds": true,
+    "min_height_px": 320
+  },
+
+  "_lat_lng_bearing_sources": [
+    "idap.businesses (lat / lng columns from Google Maps scrape)",
+    "idap.cities (geocoded city centroids — coarser zoom)",
+    "idap.streets (street-level lat/lng — only loads top-200 to avoid client overload)",
+    "Any custom `content_data_sources` row exposing lat + lng fields"
+  ],
+
+  "_anti_patterns": [
+    "Do NOT include `_googleMapsKey` or `_mapboxToken` or any `_*`-prefixed prop in your authored payload — the W3.3 strip-on-write helper wipes them on every write. The renderer injects per-tenant keys server-side at render time only.",
+    "If a tenant's data source has no lat/lng fields, the map block 422s at validation time. Use `template_get_help → marketplace.dynamic_map` to see the per-source field requirements before binding.",
+    "Sparkline-density coordinate clusters (>500 markers in one viewport) hit the SQL LIMIT 500 cap; use the `filter` block to narrow before increasing limit."
+  ]
+}
