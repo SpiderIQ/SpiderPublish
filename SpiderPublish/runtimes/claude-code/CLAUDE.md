@@ -8,7 +8,7 @@ This file binds your Claude Code session to the SpiderPublish content platform: 
 
 This project uses SpiderPublish (SpiderIQ's content platform) to build, manage, and deploy websites.
 
-**Current package versions (1.0.0, 2026-04-18):** `@spideriq/cli@1.0.0`, `@spideriq/mcp-publish@1.0.0`, `@spideriq/core@1.0.0` — **105 tools** (atomic SpiderPublish slice: pages, posts, docs, templates, components, domains, media, directory, playbook, scroll-sequence + section-override + component-propagation + local-upload one-shots). The `.mcp.json` in this starter kit pins `@spideriq/mcp-publish` instead of the kitchen-sink `@spideriq/mcp@1.0.0` (which also includes SpiderBook booking tools) — some IDE/LLM stacks silently drop tool injections above ~128 tools, and every tool schema re-injects into LLM context on every turn. If you need mail / leads / gate / admin / booking tools too, add a second MCP server entry for `@spideriq/mcp-mail` / `-leads` / `-gate` / `-admin`, or fall back to `@spideriq/mcp` for the whole surface.
+**Current package versions (1.11.0, 2026-05-09):** `@spideriq/cli@1.11.0`, `@spideriq/mcp-publish@1.11.0`, `@spideriq/core@1.10.0` — **94 atomic SpiderPublish tools** (pages, posts, docs, templates, components, domains, media, directory, playbook, scroll-sequence + section-override + component-propagation + local-upload one-shots; +1 from P2 Page Export + PageAuditor 2026-05-09; +5 from P4 Page Locking + Versions 2026-05-09). The `.mcp.json` in this starter kit pins `@spideriq/mcp-publish` instead of the kitchen-sink `@spideriq/mcp@1.11.0` (which also includes SpiderBook booking tools) — some IDE/LLM stacks silently drop tool injections above ~128 tools, and every tool schema re-injects into LLM context on every turn. If you need mail / leads / gate / admin / booking tools too, add a second MCP server entry for `@spideriq/mcp-mail` / `-leads` / `-gate` / `-admin`, or fall back to `@spideriq/mcp` for the whole surface.
 
 ---
 
@@ -765,6 +765,39 @@ Deploy **rejects** if any blocking item is missing. Always call `content_deploy_
 | `403 TokenActionMismatch` | Token was for a different action | Don't reuse tokens across operations |
 | `409 TokenConsumed` | Single-use token already used | Issue a fresh one |
 | `410 TokenExpired` | Past expires_at (7 days) | Issue a fresh one |
+| `423 page_locked` | Page is locked by another actor (P4) | Read `detail.unlock_endpoint` + `locked_reason` — back off OR call `content_unlock_page` if you're the lock-holder |
+| `403 force_required` | `?force=true` from a non-super_admin / non-brand_admin role | Either elevate, or wait for the lock-holder to unlock |
+
+### Page Locking + Version Restore (P4, 2026-05-09)
+
+Pages can be **locked** against further edits during client review or scheduled launch. Mutations on a locked page (`content_update_page`, `content_publish_page`, `content_unpublish_page`, `content_delete_page`, `content_insert_section`, `content_restore_page_version`) return **HTTP 423 Locked** with this body:
+
+```json
+{
+  "detail": {
+    "error": "page_locked",
+    "message": "Page is locked by api:cli_xxx.",
+    "locked_by_actor_id": "api:cli_xxx",
+    "locked_at": "2026-05-09T21:11:00Z",
+    "locked_reason": "client review week of 2026-05-12",
+    "unlock_endpoint": "/api/v1/dashboard/projects/cli_xxx/content/pages/<id>/unlock"
+  }
+}
+```
+
+**Recovery path:** parse `locked_by_actor_id`. If it matches your `actor_id`, call `content_unlock_page({page_id})`. Otherwise read `locked_reason` — if it names a deadline, back off. Do NOT loop on the 423 retry without backoff; the lock provenance won't change until someone explicitly unlocks. Versions endpoints (`content_list_page_versions`, `content_get_page_version`) are read-only and work on locked pages.
+
+**5 new MCP tools** in `@spideriq/mcp-publish@1.11.0+` and kitchen-sink `@spideriq/mcp@1.11.0+` (94 atomic tools total):
+
+| Tool | What it does |
+|---|---|
+| `content_lock_page({page_id, reason?})` | Lock the page. Idempotent — re-locking refreshes `locked_at` and `reason`. |
+| `content_unlock_page({page_id, force?})` | Unlock. Default — only the lock-holder. `force=true` requires super_admin or brand_admin (server-enforced). |
+| `content_list_page_versions({page_id})` | Snapshot log (newest first) — `version_number`, `title`, `block_count`, `blocks_size`, `change_summary`, `created_at`. |
+| `content_get_page_version({page_id, version_number})` | Single snapshot in full (with `blocks`) — diff against current before restore. |
+| `content_restore_page_version({page_id, version_number, dry_run?, confirm_token?, force?})` | Phase 11+12 dry_run/confirm_token gated. Appends new version row recording the restore. |
+
+Recipe walkthrough: [`shared/recipes/lock-during-review/SKILL.md`](../recipes/lock-during-review/SKILL.md).
 
 ### PAT Auth Errors (2026-04-24)
 

@@ -78,6 +78,39 @@ Deploy **rejects** if any blocking item is missing. Always call `content_deploy_
 | `403 TokenActionMismatch` | Token was for a different action | Don't reuse tokens across operations |
 | `409 TokenConsumed` | Single-use token already used | Issue a fresh one |
 | `410 TokenExpired` | Past expires_at (7 days) | Issue a fresh one |
+| `423 page_locked` | Page is locked by another actor (P4) | Read `detail.unlock_endpoint` + `locked_reason` — back off OR call `content_unlock_page` if you're the lock-holder |
+| `403 force_required` | `?force=true` from a non-super_admin / non-brand_admin role | Either elevate, or wait for the lock-holder to unlock |
+
+### Page Locking + Version Restore (P4, 2026-05-09)
+
+Pages can be **locked** against further edits during client review or scheduled launch. Mutations on a locked page (`content_update_page`, `content_publish_page`, `content_unpublish_page`, `content_delete_page`, `content_insert_section`, `content_restore_page_version`) return **HTTP 423 Locked** with this body:
+
+```json
+{
+  "detail": {
+    "error": "page_locked",
+    "message": "Page is locked by api:cli_xxx.",
+    "locked_by_actor_id": "api:cli_xxx",
+    "locked_at": "2026-05-09T21:11:00Z",
+    "locked_reason": "client review week of 2026-05-12",
+    "unlock_endpoint": "/api/v1/dashboard/projects/cli_xxx/content/pages/<id>/unlock"
+  }
+}
+```
+
+**Recovery path:** parse `locked_by_actor_id`. If it matches your `actor_id`, call `content_unlock_page({page_id})`. Otherwise read `locked_reason` — if it names a deadline, back off. Do NOT loop on the 423 retry without backoff; the lock provenance won't change until someone explicitly unlocks. Versions endpoints (`content_list_page_versions`, `content_get_page_version`) are read-only and work on locked pages.
+
+**5 new MCP tools** in `@spideriq/mcp-publish@1.11.0+` and kitchen-sink `@spideriq/mcp@1.11.0+` (94 atomic tools total):
+
+| Tool | What it does |
+|---|---|
+| `content_lock_page({page_id, reason?})` | Lock the page. Idempotent — re-locking refreshes `locked_at` and `reason`. |
+| `content_unlock_page({page_id, force?})` | Unlock. Default — only the lock-holder. `force=true` requires super_admin or brand_admin (server-enforced). |
+| `content_list_page_versions({page_id})` | Snapshot log (newest first) — `version_number`, `title`, `block_count`, `blocks_size`, `change_summary`, `created_at`. |
+| `content_get_page_version({page_id, version_number})` | Single snapshot in full (with `blocks`) — diff against current before restore. |
+| `content_restore_page_version({page_id, version_number, dry_run?, confirm_token?, force?})` | Phase 11+12 dry_run/confirm_token gated. Appends new version row recording the restore. |
+
+Recipe walkthrough: [`shared/recipes/lock-during-review/SKILL.md`](../recipes/lock-during-review/SKILL.md).
 
 ### PAT Auth Errors (2026-04-24)
 
