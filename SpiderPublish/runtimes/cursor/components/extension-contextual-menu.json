@@ -1,0 +1,30 @@
+{
+  "_description": "Reference: sys-geo-contextual-menu (W7.1) — page-injection extension that overrides the right-click context menu with Copy-as-MD / Copy-as-JSON-LD / Open-in-ChatGPT / Open-in-Claude actions. Cmd/Ctrl+Shift+RightClick falls through to the native browser menu. OFF by default per `content_settings.extensions.contextual_menu.enabled`.",
+  "_block_type": "extension",
+  "_kind": "extension",
+  "_renderer_pattern": "page-injection",
+  "_min_renderer_version": "v2.78.0",
+  "_no_block_needed": "Page-injection extension activates automatically when contextual_menu.enabled=true. Inject a page-block only if you want to override per-page (rare).",
+
+  "_settings_shape": {
+    "extensions": {
+      "contextual_menu": {
+        "enabled": true,
+        "actions": {
+          "copy_md": true,
+          "copy_jsonld": true,
+          "open_chatgpt": true,
+          "open_claude": true
+        },
+        "fallback_modifier": "Cmd+Shift",
+        "show_brand_link": false
+      }
+    }
+  },
+
+  "_a11y_notes": [
+    "Native menu fallback via Cmd/Ctrl+Shift+RightClick (configurable).",
+    "Actions are keyboard-accessible (Tab + Enter); not just pointer-driven.",
+    "Reduced-motion preference disables fade-in animation on the custom menu."
+  ]
+}

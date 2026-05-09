@@ -1,0 +1,32 @@
+{
+  "_description": "Reference: dynamic form block (W4.1 + W3.3). Server-side validation + storage in form_submissions. 8 base field types plus W3.3's phone-validated + address-autocomplete (use per-tenant Google Maps browser keys via render-time injection — agents never see the key, server injects props._googleBrowserKey at render).",
+  "_block_type": "dynamic",
+  "_kind": "dynamic",
+  "_min_renderer_version": "v2.78.0",
+
+  "id": "b-form-1",
+  "type": "component",
+  "component_slug": "form",
+  "component_version": "1.1.0",
+  "layout": "stacked",
+  "data_binding": null,
+  "props": {
+    "form_id": "contact-form",
+    "submit_url_path": "/api/v1/content/forms/contact-form/submit",
+    "redirect_on_success_url": "/thanks",
+    "fields": [
+      { "name": "name", "label": "Your name", "type": "text", "required": true },
+      { "name": "email", "label": "Email", "type": "email", "required": true },
+      { "name": "phone", "label": "Phone", "type": "phone-validated", "required": false, "_note": "W3.3 — uses Google Maps libphonenumber via per-tenant key" },
+      { "name": "address", "label": "Address", "type": "address-autocomplete", "required": false, "_note": "W3.3 — autocomplete via per-tenant Google Places key" },
+      { "name": "message", "label": "How can we help?", "type": "textarea", "required": false }
+    ],
+    "submit_label": "Send"
+  },
+
+  "_anti_patterns": [
+    "Do NOT include `_googleBrowserKey` or any `_*`-prefixed prop in your authored payload — `content_service._strip_render_time_props_from_blocks` wipes them on every write. The renderer injects the key server-side at render time only.",
+    "phone-validated and address-autocomplete require the tenant to have set up `content_settings.map_providers` in the dashboard. Without that, the field renders as plain text/tel.",
+    "Field type `'phone'` (no `-validated` suffix) is the unvalidated tel input. The W3.3 validator only runs when type='phone-validated' is set explicitly."
+  ]
+}

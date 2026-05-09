@@ -74,16 +74,31 @@ Continue reading for full architecture, tool catalog, and recipes →
 
 ## Quick Start (2 minutes)
 
-### 1. Copy files into your project
+### 1. Copy files into your project — pick the runtime that matches your IDE
+
+The Starter Kit ships per-runtime trees under [`runtimes/`](./runtimes/). Pull only the one your IDE expects:
 
 ```bash
-# Option A: Clone just this directory
-npx degit martinshein/SpideriQ-ai/SpiderPublish my-site
-cd my-site
+# Claude Code (CLI / VSCode / JetBrains plugin / Windsurf / VSCode-with-Claude-Code-extension)
+npx degit martinshein/SpideriQ-ai/SpiderPublish/runtimes/claude-code my-site
 
-# Option B: Copy manually
-# Download .mcp.json + CLAUDE.md + spideriq.json.example from this directory into your project root
+# Google Antigravity
+npx degit martinshein/SpideriQ-ai/SpiderPublish/runtimes/antigravity my-site
+bash my-site/install-knowledge-items.sh   # copies KIs to ~/.gemini/antigravity/knowledge/
+
+# Cursor
+npx degit martinshein/SpideriQ-ai/SpiderPublish/runtimes/cursor my-site
+
+# Claude Desktop (manual setup, no auto-bootstrap)
+npx degit martinshein/SpideriQ-ai/SpiderPublish/runtimes/claude-desktop my-site
+# then read my-site/README.md for the manual claude_desktop_config.json edit
+
+cd my-site
 ```
+
+> **Don't know which one you are?** Paste [SETUP-PROMPT.md](./SETUP-PROMPT.md) into your agent — it self-detects and runs the right block.
+
+The canonical content lives in [`shared/`](./shared/) and is regenerated into each runtime via `npm run build`. Edit `shared/`, regenerate, commit. Never edit `runtimes/` directly.
 
 ### 2. Authenticate
 
@@ -143,39 +158,46 @@ The default palette is dark ("Developer Noir"). `primary_color` is the ACCENT on
 
 ```
 SpiderPublish/
-├── .mcp.json                          # MCP server config (drop into project root)
-├── CLAUDE.md                          # AI agent context (drop into project root)
-├── AGENTS.md                          # Complete integration guide
-├── LEARNINGS.md                       # Gotchas & best practices (including Phase 11+12)
-├── spideriq.json.example              # Template for per-project binding file
-├── .env.example                       # Environment variables
-├── templates/                         # Ready-to-submit page payloads
-│   ├── homepage.json                  # Company homepage (hero + features + CTA)
-│   ├── blog-setup.json                # Blog setup (author + tags + 2 posts)
-│   └── dynamic-landing.json           # Personalized outreach page
-├── components/                        # Shadow DOM components (CSS-isolated)
-│   ├── hero-gradient.json             # Tier 1: gradient hero with CTA
-│   ├── pricing-cards.json             # Tier 1: 3-tier pricing table
-│   ├── faq-accordion.json             # Tier 2: interactive FAQ
-│   ├── stats-animated.json            # Tier 3: GSAP animated counters
-│   ├── pricing-toggle.json            # Tier 4: React monthly/annual toggle
-│   ├── scroll-sequence.json           # REF: scroll-hero page-block config
-│   ├── block-component.json           # REF: canonical type='component' block shape
-│   ├── block-rich-text.json           # REF: type='rich_text' data.html vs data.content
-│   └── page-with-custom-header.json   # REF: chrome auto-skip when a block is category='header'
-└── examples/                          # Full workflow examples
-    ├── build-and-deploy.sh            # cURL-based site build (project-scoped URLs + confirm_token flow)
-    ├── personalized-outreach.sh       # Dynamic landing page setup
-    ├── scroll-sequence.sh             # Scroll-linked hero via extract_frames + sys-scroll-sequence
-    ├── bulk-media-upload.sh           # Local dir → SpiderMedia (no tunnels)
-    ├── directory-bulk-import.sh       # Programmatic SEO directory from IDAP data
-    ├── booking-flow.sh                # Cal.com-backed appointments
-    ├── personalized-landing.sh        # End-to-end personalized landing with merge tags
-    ├── check-auth.sh                  # whoami + token_expired / token_invalid branching
-    ├── audit-links.sh                 # content_audit_links — find broken internal links
-    ├── preview-component.sh           # Iframe-render a single component for Shadow DOM checks
-    ├── tilda-migrate-css.sh           # auto_extract_css one-file import
-    └── tilda-migrate.sh               # End-to-end: section → component → page → publish
+├── README.md                          # this file (repo landing)
+├── SETUP-PROMPT.md                    # paste this into your agent — branches by runtime
+├── manifest.json                      # runtime + skill registry (consumed by build.ts)
+├── package.json + tsconfig.json       # build dependencies (tsx + zod, ~10 packages)
+│
+├── shared/                            # CANONICAL source of truth — edit here
+│   ├── content/                       # top-level concept docs (CAPABILITIES / SURFACES / GEO / MERGE-TAGS / LEARNINGS), Claude binding, AGENTS catalog
+│   ├── recipes/                       # 10 multi-step task recipes (scroll-sequence, marketplace-search-and-insert, …)
+│   ├── core-skills/                   # 5 MCP-namespace overviews (content-platform, booking, templates-engine, upload-host-media, agentdocs)
+│   ├── guides/                        # 5 onboarding + decision guides (create-page, personalized-landing, pick-mcp-package, cli-quick-reference, ide-extension-setup)
+│   ├── components/                    # 21 component / block JSON exemplars
+│   ├── examples/                      # 14 runnable shell scripts
+│   └── templates/                     # 3 ready-to-submit page payloads
+│
+├── runtimes/                          # EMITTED per-runtime trees — regenerated by `npm run build`
+│   ├── claude-code/                   # CLAUDE.md + .claude/skills/{recipes,core,guides}/<id>/SKILL.md (with YAML frontmatter) + .mcp.json
+│   ├── antigravity/                   # AGENTS.md + knowledge-items/<NN>-spideriq-<id>/{metadata.json,artifacts/} + install-knowledge-items.sh
+│   ├── cursor/                        # AGENTS.md + .cursor/rules/<id>.mdc (description-matched auto-load) + .mcp.json
+│   └── claude-desktop/                # README.md (manual setup, no auto-bootstrap)
+│
+├── scripts/
+│   └── build.ts                       # ~280 LOC TypeScript — reads manifest.json + shared/, emits runtimes/
+│
+└── CLAUDE.md, AGENTS.md               # legacy redirects (retiring ~2026-06-09 — one release cycle)
+```
+
+### Editing the kit
+
+```bash
+# 1. Edit canonical content
+$EDITOR shared/recipes/scroll-sequence/SKILL.md
+$EDITOR shared/content/agents-catalog.md
+$EDITOR manifest.json   # if adding a new skill or runtime
+
+# 2. Regenerate runtimes
+npm run build
+
+# 3. Commit (degit pulls from `runtimes/` so the trees must be checked in)
+git add shared/ runtimes/ manifest.json
+git commit -m "feat(scroll-sequence): clarify GSAP fallback path"
 ```
 
 ## Where to Start

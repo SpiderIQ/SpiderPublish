@@ -1,0 +1,64 @@
+{
+  "_description": "Reference: dynamic chart block (W5.3) — server-side aggregation + Chart.js v4 client-side rendering. Aggregates any collection (posts / authors / IDAP businesses) by a categorical or temporal field, then ships the Chart.js config baked into the rendered HTML so the client just hydrates Chart.js against `<canvas data-chart-config>`. Sparkline-in-small-container handled via per-type CSS sizing (min-height 32px, height 48px, width 100%).",
+  "_block_type": "dynamic",
+  "_kind": "dynamic",
+  "_min_renderer_version": "v2.79.0",
+
+  "_DEPENDENCY_CALLOUT_FOR_AGENTS": "Chart.js v4.4.6 — NOT Recharts. Plan §9.4 originally proposed Recharts but the renderer is SSR Liquid HTML with zero React; Recharts is React-native and would require bundling React + DOM into every tenant Worker. Chart.js loads via the existing CDN allowlist (chart.js@4.4.6) + AUX-1 hydration runner polls `window.Chart` before invoking the seed JS shim. Do NOT replace Chart.js with Recharts / D3 / ECharts / Highcharts in any tenant page or component spec — the renderer pipeline does not support React or large bespoke libs. The chartjs CDN allowlist row is the single point of truth (migration 113 + 228).",
+
+  "id": "b-chart-1",
+  "type": "component",
+  "component_slug": "chart",
+  "component_version": "1.0.0",
+  "layout": "standard",
+  "data_binding": {
+    "source_id": "posts",
+    "filter": { "status": "published" },
+    "sort": { "field": "published_at", "direction": "asc" },
+    "limit": 500,
+    "_max_items_ceiling": "500 — SQL LIMIT 500 hard cap as defence-in-depth vs the Pydantic le=500 validator on the request schema. Larger requests 422 at the validation layer.",
+    "field_select": ["published_at", "id"]
+  },
+  "props": {
+    "chart_type": "bar",
+    "_chart_types_available": {
+      "line": "Time-series + continuous numeric. Best for posts.published_at monthly counts, traffic over time.",
+      "bar": "Categorical comparison. Best for top-N by category (top authors, country counts, rating buckets).",
+      "pie": "Share-of-whole. Best for ≤8 segments; prefer bar above 8.",
+      "area": "Stacked time-series. Same as line but filled — good for compositional change over time.",
+      "sparkline": "Inline tiny chart, no axes / legend / tooltips. Best for KPI cards. Per-type CSS sizing (min-height 32px / height 48px / width 100%) so it fits any container."
+    },
+    "aggregation": "count",
+    "_aggregations_available": {
+      "count": "COUNT(*) — works on any source. No `value_field` needed.",
+      "sum": "SUM(value_field) — requires `value_field` to be a numeric column.",
+      "avg": "AVG(value_field) — requires `value_field` to be a numeric column."
+    },
+    "group_by": "month(published_at)",
+    "_group_by_examples": [
+      "month(published_at) — buckets by calendar month. Auto-formats axis labels.",
+      "year(published_at) — buckets by year.",
+      "author_name — categorical group by string column.",
+      "country_code — for IDAP businesses.",
+      "rating::int — bucket numeric to integer for histogram-style bars."
+    ],
+    "title": "Posts published per month",
+    "y_label": "Posts",
+    "x_label": "Month",
+    "color_palette": "spideriq-default"
+  },
+
+  "_endpoint": "GET /api/v1/content/data-sources/{source_id}/aggregate?metric=count&group_by=...&limit=...",
+  "_supported_sources": [
+    "posts (content_pages.posts) — fields: published_at, author_id, status, view_count",
+    "authors (content_authors) — fields: name, post_count",
+    "idap.businesses (norm_cli_<id>.businesses) — fields: city_slug, country_code, rating, reviews_count, lat, lng",
+    "Any registered `content_data_sources` row with a `metric_fields` JSONB allowlist"
+  ],
+
+  "_anti_patterns": [
+    "Do NOT request a chart with > 500 grouped buckets — the SQL cap rejects it. Use a coarser `group_by` (year() instead of month()) or add a `filter` to narrow first.",
+    "Sparkline charts must NOT have `title` / `y_label` / `x_label` props set — they're stripped at render time anyway, but cleaner if the author payload omits them.",
+    "Chart.js dependency is auto-loaded by AUX-1 hydration runner from the CDN allowlist. Do NOT manually `<script src=...>` Chart.js in your tenant — the runner deduplicates and resolves load-order automatically."
+  ]
+}

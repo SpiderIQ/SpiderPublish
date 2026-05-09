@@ -1,0 +1,37 @@
+{
+  "_description": "Reference: OpenSearch + llms.txt extensions (W6.3). NOT page-blocks — renderer-hook extensions that auto-expose `/opensearch.xml` (browser-search registration) and `/llms.txt` (LLM-crawler-friendly site summary) on every published tenant site. The llms.txt extension supports 4 presets: minimal / blog-only / fastapi-style / mintlify.",
+  "_block_type": "extension",
+  "_kind": "extension",
+  "_renderer_pattern": "renderer-hook",
+  "_min_renderer_version": "v2.78.0",
+  "_no_block_needed": "Site-wide extensions; no page-block markup.",
+
+  "_settings_shape": {
+    "extensions": {
+      "opensearch": {
+        "enabled": true,
+        "short_name": "Your Site",
+        "description": "Search the site",
+        "search_url_template": "/search?q={searchTerms}"
+      },
+      "llms_txt": {
+        "enabled": true,
+        "preset": "blog-only",
+        "title": "Your Site Knowledge",
+        "summary": "What this site covers + key links for LLM crawlers."
+      }
+    }
+  },
+
+  "_endpoints": [
+    { "path": "/opensearch.xml", "format": "OpenSearch description", "content_type": "application/opensearchdescription+xml" },
+    { "path": "/llms.txt",       "format": "llms.txt",                "content_type": "text/plain" }
+  ],
+
+  "_llms_presets": {
+    "minimal":       "Site title + summary + top-level URLs only",
+    "blog-only":     "Adds every published blog post (title + URL + 1-line excerpt)",
+    "fastapi-style": "Adds every public API endpoint with curl examples",
+    "mintlify":      "Adds every documentation page in a tree-walk format"
+  }
+}

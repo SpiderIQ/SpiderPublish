@@ -1,0 +1,8 @@
+---
+description: "SpiderPublish starter kit — root rule. Always-apply: true. Pulls in per-skill rules on demand based on user intent."
+alwaysApply: true
+---
+
+This project uses SpiderPublish (SpiderIQ's content platform). Read [AGENTS.md](../../AGENTS.md) for the tool catalog and the Phase 11+12 multi-tenant safety contract before mutating any tenant content.
+
+When the user's intent matches one of the per-skill rules in this directory, that rule auto-loads. Recipes (multi-step workflows) are under `recipe-*.mdc`, core MCP namespaces under `core-*.mdc`, and onboarding/decision guides under `guide-*.mdc`.

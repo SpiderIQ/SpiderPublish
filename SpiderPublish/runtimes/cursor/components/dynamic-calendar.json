@@ -1,0 +1,30 @@
+{
+  "_description": "Reference: dynamic calendar block (W5.1). 3 layouts (month/week/agenda). Vanilla date-math (no Moment.js). Full ARIA grid + arrow-key keyboard navigation. Renders any collection of items with a date field as calendar entries.",
+  "_block_type": "dynamic",
+  "_kind": "dynamic",
+  "_layouts_available": ["month", "week", "agenda"],
+  "_min_renderer_version": "v2.78.0",
+
+  "id": "b-calendar-1",
+  "type": "component",
+  "component_slug": "calendar",
+  "component_version": "1.0.0",
+  "layout": "month",
+  "data_binding": {
+    "source_id": "posts",
+    "filter": { "category": "events" },
+    "sort": { "field": "event_date", "direction": "asc" },
+    "limit": 100,
+    "field_select": ["title", "event_date", "event_end_date", "url", "location"]
+  },
+  "props": {
+    "date_field": "event_date",
+    "end_date_field": "event_end_date",
+    "title_field": "title",
+    "url_field": "url",
+    "first_day_of_week": "monday",
+    "show_today_button": true,
+    "today_label": "Today",
+    "_a11y_note": "Component renders ARIA-compliant grid (role=grid, role=row, role=gridcell). Arrow keys navigate days, Enter activates, Home/End jump week-start/end."
+  }
+}

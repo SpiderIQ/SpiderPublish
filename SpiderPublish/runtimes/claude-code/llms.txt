@@ -1,0 +1,56 @@
+# SpiderPublish
+
+> Public Starter Kit for SpiderIQ — an AI-Native Agency OS. CMS · CRM · workflows · booking · CRO · personalization · scraping · media. One runtime, MCP-native end-to-end. Every published tenant page dual-rendered for humans and LLMs.
+
+This kit covers the content + extension slice. Other slices (lead-gen, mail, gate, super-admin) ship from separate kits or via the dashboard. Drop the kit into any project with `npx degit martinshein/SpideriQ-ai/SpiderPublish my-site` — the resident LLM agent reads these files cold and learns to drive the platform.
+
+## What it is, in 11 capabilities
+
+- 4-class component taxonomy: `static` / `interactive` / `dynamic` / `extension` — drives renderer + editor + agent surface
+- Dynamic pages with merge tags — `/lp/{slug}/{place_id}` IDAP-backed personalization
+- Directories for lead-gen programmatic SEO — `/directory/{cat}/{city}/{listing}`
+- SpiderBook — appointment scheduling as flexible flows (cal.com-backed) + `{% booking %}` Liquid tag
+- CRM (leads / contacts / pipelines) — IDAP-fed lead store, dashboard surface
+- Workflows — distributed orchestration over the worker fleet for campaigns
+- CRO tools — timer / exit-intent / social-proof / stock bar / sticky bar / pricing toggle
+- GEO — `/llms.txt` · `/feed.xml` · `/sitemap.xml` · contextual menu · schema.org JSON-LD · human/agent toggle
+- Scraping + enrichment — SpiderSite · SpiderMaps · SpiderPeople · SpiderVerify · SpiderPhone · SpiderBrowser · IDAP (~44k cities)
+- Media — upload / download / stream · ffmpeg pipeline → scroll-sequence frames · R2-backed `media.cdn.spideriq.ai`
+- Agent surface — CLI · MCP · IDE extension · Skills, all over one engine
+
+## Read first (in this order)
+
+- [CAPABILITIES.md](./CAPABILITIES.md): the 11-surface index + 4-class taxonomy + what's in this kit vs elsewhere
+- [SURFACES.md](./SURFACES.md): pick CLI vs MCP vs IDE extension vs Skills — same engine, four rendering surfaces
+- [AGENTS.md](./AGENTS.md): full tool catalog with payload schemas, error tables, common mistakes
+- [CLAUDE.md](./CLAUDE.md): Claude-Code-specific session-binding + Phase 11+12 multi-tenant safety contract
+- [GEO.md](./GEO.md): Generative Engine Optimization — W6+W7 extension family
+- [MERGE-TAGS.md](./MERGE-TAGS.md): personalization vocabulary for `/lp/{slug}/{place_id}` pages
+- [skills/recipes/](./skills/recipes/): 10 multi-step workflows (marketplace-search, scroll-sequence, tilda-migration, link-audit, directory, …)
+- [LEARNINGS.md](./LEARNINGS.md): gotchas + anti-patterns — read before shipping
+
+## Key tools (publish + extension scope)
+
+- `content_create_page` — create a tenant page with blocks
+- `content_publish_page` — publish a page (default `dry_run=true` → preview → `confirm_token`)
+- `content_deploy_site_preview` / `content_deploy_site_production` — preview → confirm → deploy to Cloudflare edge in 2–5s
+- `marketplace_search` — find components by `kind` / `mood` / `palette` / `brand_fit_tags` / `scene_type`
+- `marketplace_suggest_agent_meta` — LLM-suggest mood / palette / brand-fit on uploaded marketplace assets
+- `content_resolve_lead` — resolve a lead by `place_id` / `domain` / `email` for personalized landing pages
+- `content_audit_links` — find broken internal links before deploy
+- `content_override_section` — replace per-tenant header / footer / layout Liquid
+
+## Surfaces
+
+- CLI: `@spideriq/cli@1.7.0` — `npx @spideriq/cli auth request --email <admin>`
+- MCP: `@spideriq/mcp-publish@1.7.0` — drop the kit's `.mcp.json` into your project root
+- IDE extension: `SpiderIQ.spideriq-publish@0.1.1` on Open VSX + VSCode Marketplace — `code --install-extension SpiderIQ.spideriq-publish`
+- Skills: Anthropic format in `skills/`; Antigravity Knowledge Items in `knowledge/antigravity/` (install via `examples/install-antigravity-kis.sh`)
+
+## Repo + docs
+
+- Public Starter Kit: https://github.com/martinshein/SpideriQ-ai/tree/main/SpiderPublish
+- Documentation: https://docs.spideriq.ai
+- npm registry: https://npm.spideriq.ai (`@spideriq/*` packages)
+- Extension reference: https://docs.spideriq.ai/extension
+- Agent reference: https://docs.spideriq.ai/site-builder/agents
