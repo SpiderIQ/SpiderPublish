@@ -2,6 +2,45 @@
 
 Things that cause silent failures or broken deploys. Read before building.
 
+## May 2026 — Stop shipping broken sections: read `_rules` on dry_run, `_audit` on success (P5, 2026-05-10)
+
+**The trap:** an AI agent inserts a component (especially a complex one — scroll-sequence, multistep form, dynamic block) without knowing the canonical authoring path. The block lands in the page, but renders broken at runtime — empty frames on a scroll-sequence, missing `submit_endpoint` on a form, hardcoded `provider=mapbox` without a configured key on a map. The agent gets `200 OK` on the insert and moves on; the breakage surfaces three roundtrips later when the dashboard preview loads, or worse, after deploy when a real visitor hits the page.
+
+The canonical example: a paying customer's session in early 2026-05 inserted `sys-scroll-sequence` with `props: {}` (zero frames). The block landed; the `200 OK` looked clean. The section rendered as a blank canvas in production. The customer's previous scroll-section was still on the page — the agent had no signal that the new insertion replaced nothing visible.
+
+**The fix:** every component-targeted MCP mutation now ships:
+
+- a **`_rules`** block on `dry_run` — composes intrinsic rules (derived from `kind` / `dependencies` / `props_schema`) + author-written rules (the `preferred_path`, `must_set`, `must_not_set` fields component authors put in `authoring_hints`) + cross-cutting findings (PageAuditor on the target page BEFORE the mutation)
+- an **`_audit`** block on the actual mutation response — post-mutation findings using the same shape an agent already understands from `content_export_page` (P2)
+
+Reads of `content_get_page` decorate with **`_page_audit`** when `audit_level != off` (default `warnings`).
+
+**Recovery path for the agent:**
+
+1. **Always dry_run first.** Read `_rules.authored.preferred_path`. If the component author wrote a nudge ("Use the video_to_scroll_sequence MCP tool, not manual insert"), STOP confirming the dry_run and switch to the named tool. The author wrote the nudge because the manual-insert path is error-prone for this component.
+2. **Read `_rules.cross_cutting`.** If the page already has a site-level error (`site.no_verified_primary_domain` — the page won't have a public URL), surface that to the user before confirming. The cross-cutting finding is frequently the real blocker, not the section-level edit.
+3. **On confirm, read `_audit.summary`.** If `errors > 0`, the response carries `block_level` findings with `suggested_fix` strings. Apply the fix and retry the dry_run; don't loop on the same shape.
+
+**Component-author write surface:** when you author a global component, populate `authoring_hints` so downstream inserting agents get tailored guidance:
+
+```js
+content_create_component({
+  slug: "my-component",
+  // ... other args ...
+  authoring_hints: {
+    preferred_path: "Use my_helper_tool, not manual insert.",
+    must_set:        ["headline", "submit_endpoint"],
+    must_not_set:    ["_internalKey"]
+  }
+})
+```
+
+Empty `{}` (the column default) = no hints; the component degrades cleanly to intrinsic-only rules.
+
+**Backwards compatible:** agents that ignore `_rules` / `_audit` / `_page_audit` aren't broken. The 15 most-misused components (sys-scroll-sequence, popups, dynamic blocks, forms, etc.) ship with author hints already populated as of 2026-05-10. Versions: `@spideriq/mcp-publish@1.12.0+`, `@spideriq/mcp@1.12.0+`, `@spideriq/core@1.12.0+`.
+
+Recipe walkthrough: [`shared/recipes/audit-driven-edit/SKILL.md`](../recipes/audit-driven-edit/SKILL.md).
+
 ## May 2026 — Pages can be locked, and 423 means stop (P4 Page Locking + Versions, 2026-05-09)
 
 **The trap:** two agents (or an agent + a dashboard user) edit the same page concurrently — one mid-review, one mid-launch — and the later write silently overwrites the earlier one. There's no "this page is being reviewed" signal, just a `200 OK` and a clobbered page.

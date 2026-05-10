@@ -112,6 +112,99 @@ Pages can be **locked** against further edits during client review or scheduled 
 
 Recipe walkthrough: [`shared/recipes/lock-during-review/SKILL.md`](../recipes/lock-during-review/SKILL.md).
 
+### Rules + Audit envelope (P5, 2026-05-10)
+
+Every component-targeted MCP mutation now ships a **`_rules`** block on `dry_run` and an **`_audit`** block on the success response. Reads of `content_get_page` decorate with **`_page_audit`** when `audit_level != off`. Replaces "insert blindly and hope it renders" with a single-roundtrip authoring loop where the agent learns the canonical tool path BEFORE inserting and sees broken state IMMEDIATELY on the response.
+
+**Three rule sources** composed by the server (no agent action required):
+
+| Source | Where it comes from | When present |
+|---|---|---|
+| **A — intrinsic** | derived from the component's `kind` / `dependencies` / `props_schema` at request time | always |
+| **B — authored** | raw passthrough from `content_components.authoring_hints` (the `preferred_path`, `common_mistakes`, `must_set`, `must_not_set` fields) | when the component author populated the column |
+| **C — cross_cutting** | `PageAuditor.audit_page` findings on the target page BEFORE the mutation lands | only on dry_run of `page_insert_section` |
+
+**`_rules` envelope (on dry_run):**
+
+```json
+{
+  "preview": {...},
+  "confirm_token": "cft_xxx",
+  "expires_at": "...",
+  "_rules": {
+    "component_slug": "sys-scroll-sequence",
+    "component_version": "1.1.0",
+    "kind": "interactive",
+    "intrinsic": [
+      { "rule_id": "intrinsic.scroll_sequence_frames_required", "severity": "error", "message": "...", "suggested_fix": "..." }
+    ],
+    "authored": {
+      "preferred_path": "Use the video_to_scroll_sequence MCP tool — it extracts frames from a video file and creates this block in one call.",
+      "must_set": ["frames"]
+    },
+    "cross_cutting": [...]
+  }
+}
+```
+
+**`_audit` envelope (on the actual mutation):**
+
+```json
+{
+  "success": true,
+  "page_id": "...",
+  "new_block_id": "...",
+  "_audit": {
+    "site_level":      [],
+    "page_level":      [],
+    "block_level":     [{ "rule_id": "insertion.scroll_sequence_empty_frames", "severity": "error", "scope": "block", "target": "<id>", "message": "...", "suggested_fix": "..." }],
+    "component_level": [],
+    "summary": { "errors": 1, "warnings": 0, "info": 0 }
+  }
+}
+```
+
+**Mutation rules (P5):**
+
+| Severity | Rule | Catches |
+|---|---|---|
+| error | `insertion.scroll_sequence_empty_frames` | scroll-sequence inserted with 0 frames bound — section renders blank at runtime |
+| error | `insertion.unknown_component` | `component_slug` doesn't resolve for this client (not in library, not global) |
+| error | `creation.interactive_without_js` | new component with `kind=interactive` but no `js` body — hydrates as static markup |
+| warn | `insertion.missing_required_prop` | `authoring_hints.must_set` lists a prop that's empty/absent |
+| warn | `insertion.forbidden_prop` | `authoring_hints.must_not_set` lists a prop that's present |
+| warn | `creation.kind_null_with_dependencies` | new component declares CDN deps but `kind=NULL` → invisible to marketplace_search |
+| warn | `creation.global_empty_agent_meta` | new global component with empty `agent_meta` |
+| info | `insertion.preferred_path_hint` | surfaces `authoring_hints.preferred_path` so you learn the canonical tool |
+| info | `creation.empty_authoring_hints` | global component shipped with no hints — agents inserting it lose guidance |
+
+**The `audit_level` toggle** (`off | errors | warnings | all`):
+
+- `content_get_page` — default `warnings` (errors + warnings on the `_page_audit` block)
+- `page_insert_section` — default `all` (every finding on the `_audit` block)
+- `off` is the escape hatch for tight-loop scripts that bulk-insert and audit later via `content_export_page`
+
+**Component-author write surface** — `authoring_hints` on `content_create_component` / `content_update_component`:
+
+```js
+content_create_component({
+  slug: "my-component",
+  // ... other args ...
+  authoring_hints: {
+    preferred_path: "Use my_helper_tool, not manual insert.",  // info on dry_run
+    common_mistakes: ["Forgetting props.thank_you_url"],        // visible to inserting agents
+    must_set:        ["headline", "submit_endpoint"],           // missing → warn
+    must_not_set:    ["_internalKey"]                           // present → warn
+  }
+})
+```
+
+Empty `{}` (the column default) = no hints; component degrades cleanly to intrinsic-only rules. PATCH semantics on update: passing `{}` REPLACES stored hints with empty; omit the field to leave them untouched.
+
+**Backwards compatible** — agents that ignore `_rules` / `_audit` / `_page_audit` aren't broken. Components with empty `authoring_hints` (the default) still get intrinsic-only rules. Versions: `@spideriq/mcp-publish@1.12.0+`, `@spideriq/mcp@1.12.0+`, `@spideriq/core@1.12.0+`.
+
+Recipe walkthrough: [`shared/recipes/audit-driven-edit/SKILL.md`](../recipes/audit-driven-edit/SKILL.md). Sibling recipes: [`audit-and-fix`](../recipes/audit-and-fix/SKILL.md) (P2 — walks an existing page through the auditor), [`lock-during-review`](../recipes/lock-during-review/SKILL.md) (P4 — pair with this recipe to lock during the audit-edit cycle).
+
 ### PAT Auth Errors (2026-04-24)
 
 Distinguishable from the confirm-token errors above. Body is `{"detail": {"error": "<code>", "message": "...", "expires_at"?: "..."}}`.
