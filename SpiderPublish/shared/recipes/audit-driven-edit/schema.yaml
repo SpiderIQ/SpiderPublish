@@ -1,0 +1,175 @@
+name: audit-driven-edit
+tier: 3
+description: >
+  Edit a page section with rules-on-the-way-in (_rules envelope on dry_run)
+  and audit-on-the-way-out (_audit envelope on the success response).
+  Replaces "insert blindly and hope it renders" with a single-roundtrip
+  authoring loop where the agent learns the canonical tool path BEFORE
+  inserting and sees broken state IMMEDIATELY on the response.
+
+  Tier 3 plugin shim — Node 18+ stdlib only, zero npm deps. Wraps
+  content_get_page (with audit_level), page_insert_section (dry_run +
+  confirm + audit_level), content_create_component / content_update_component
+  (with authoring_hints) in one mental model.
+
+inputs:
+  page_id:
+    type: string
+    required: true
+    description: Page UUID. Get one from listPages or content_get_page.
+  component_slug:
+    type: string
+    required: true
+    description: Marketplace component slug to insert (e.g. sys-scroll-sequence, hero-headline).
+  component_version:
+    type: string
+    required: false
+    description: Optional pinned version. Omit for latest published.
+  props:
+    type: object
+    required: false
+    description: Component props matching the component's props_schema.
+  position:
+    type: string
+    required: false
+    description: '"start" | "end" (default) | "before" | "after" | integer index'
+  anchor_block_id:
+    type: string
+    required: false
+    description: Required when position is "before" or "after".
+  audit_level:
+    type: string
+    required: false
+    enum: [off, errors, warnings, all]
+    default: all
+    description: >
+      Severity filter for the _audit / _page_audit envelope. Defaults: 'all'
+      for mutations (every finding), 'warnings' for reads (errors + warnings).
+      Use 'off' only inside genuinely tight loops.
+
+# Primary action — dry_run insert reading _rules, then confirm reading _audit
+one_shot:
+  - id: dry_run_insert
+    tool: page_insert_section
+    payload:
+      page_id: "{{inputs.page_id}}"
+      component_slug: "{{inputs.component_slug}}"
+      component_version: "{{inputs.component_version}}"
+      props: "{{inputs.props}}"
+      position: "{{inputs.position}}"
+      anchor_block_id: "{{inputs.anchor_block_id}}"
+      dry_run: true
+      audit_level: "{{inputs.audit_level}}"
+    returns:
+      preview: object
+      confirm_token: string
+      expires_at: string
+      _rules:
+        component_slug: string
+        component_version: string
+        kind: string
+        intrinsic: array       # [{rule_id, severity, scope, target?, message, suggested_fix?}]
+        authored:
+          preferred_path: string
+          common_mistakes: array
+          must_set: array
+          must_not_set: array
+        cross_cutting: array   # PageAuditor.audit_page() findings on the target page
+
+  - id: confirm_insert
+    tool: page_insert_section
+    when: "after dry_run + agent decided to proceed"
+    payload:
+      page_id: "{{inputs.page_id}}"
+      component_slug: "{{inputs.component_slug}}"
+      component_version: "{{inputs.component_version}}"
+      props: "{{inputs.props}}"
+      confirm_token: "{{dry_run_insert.confirm_token}}"
+      audit_level: "{{inputs.audit_level}}"
+    returns:
+      success: boolean
+      page_id: string
+      new_block_id: string
+      insertion_index: integer
+      blocks_count: integer
+      _audit:
+        site_level: array
+        page_level: array
+        block_level: array        # mutation findings land here (insertion.scroll_sequence_empty_frames, etc.)
+        component_level: array
+        summary:
+          errors: integer
+          warnings: integer
+          info: integer
+
+# How the agent reads the dry_run _rules envelope
+recovery:
+  preferred_path:
+    when: "_rules.authored.preferred_path is non-empty"
+    advice: >
+      The component author wrote this nudge because the manual-insert path
+      is error-prone. STOP confirming the dry_run; switch to the named tool.
+      Example: sys-scroll-sequence preferred_path = "Use the
+      video_to_scroll_sequence MCP tool".
+
+  must_set_violation:
+    when: "_audit.block_level contains insertion.missing_required_prop"
+    advice: >
+      Read suggested_fix on the finding, populate the missing prop, retry
+      the dry_run. Don't loop on the same shape — the must_set list is
+      exhaustive for the component.
+
+  must_not_set_violation:
+    when: "_audit.block_level contains insertion.forbidden_prop"
+    advice: >
+      Remove the flagged prop from the request body. The component
+      handles that key internally; setting it from the agent side breaks
+      runtime behaviour.
+
+  scroll_sequence_empty_frames:
+    when: "_audit.block_level contains insertion.scroll_sequence_empty_frames"
+    advice: >
+      The block landed but will render blank. Either set props.frames to a
+      non-empty array of CDN URLs OR set props.count + props.base_url +
+      props.pattern. The video_to_scroll_sequence MCP tool extracts frames
+      from a source video file in one call.
+
+  cross_cutting_blocker:
+    when: "_rules.cross_cutting contains a site-level error (e.g. site.no_verified_primary_domain)"
+    advice: >
+      The page CAN be edited but won't have a public URL until the
+      site-level issue is fixed. Surface the cross_cutting finding to the
+      user before confirming the dry_run; it's frequently the real
+      blocker, not the section-level edit.
+
+# Component-author write surface — populate authoring_hints on global components
+component_author:
+  when: "you authored a global component and want downstream inserting agents to get tailored guidance"
+  how: |
+    Pass authoring_hints on content_create_component or
+    content_update_component. The shape is:
+      {
+        preferred_path: "Use my_helper_tool, not manual insert.",
+        common_mistakes: ["Forgetting props.thank_you_url"],
+        must_set:        ["headline", "submit_endpoint"],
+        must_not_set:    ["_internalKey"]
+      }
+    Empty {} (the column default) = no hints; the component degrades
+    cleanly to intrinsic-only rules. PATCH semantics: passing {} on
+    update REPLACES stored hints with empty; omit the field to leave
+    them untouched.
+
+# Available verbs (canonical list — for agents that need the full surface)
+verbs:
+  content_get_page:
+    description: Get a page by id. Pass audit_level to surface _page_audit on the response.
+  page_insert_section:
+    description: Insert a section. dry_run=true returns _rules; confirm_token consumes; audit_level controls _audit verbosity.
+  content_create_component:
+    description: Create a component. Pass authoring_hints to write the rules other agents see when they insert it.
+  content_update_component:
+    description: Update a component. authoring_hints replaces the stored value; pass {} to clear.
+  content_export_page:
+    description: P2 — full page export with the same audit shape. Use to inspect EXISTING pages without inserting.
+  content_lock_page:
+    description: P4 — lock the page during this audit-driven-edit cycle if you need exclusive access.
