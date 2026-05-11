@@ -2,7 +2,7 @@
 
 > **Built from canonical sources in [shared/](../../shared/).** Edit shared content there, run `npm run build` to regenerate.
 
-This kit ships **20 pre-built Knowledge Items** under [knowledge-items/](./knowledge-items/) covering capability discovery, page creation, marketplace search, deploy, personalized landing, booking, scroll-sequence, GEO readability, MCP package picking, CLI reference, and IDE extension setup. Install with `bash install-knowledge-items.sh`.
+This kit ships **21 pre-built Knowledge Items** under [knowledge-items/](./knowledge-items/) covering capability discovery, page creation, marketplace search, deploy, personalized landing, booking, scroll-sequence, GEO readability, MCP package picking, CLI reference, and IDE extension setup. Install with `bash install-knowledge-items.sh`.
 
 # SpiderPublish — AGENTS.md
 
@@ -424,6 +424,55 @@ Reads: `booking_list(business_id, status?, since?)`, `booking_get(booking_id)`. 
 
 **Full guide:** [skills/booking/](./skills/booking/) · **End-to-end example:** [`examples/booking-flow.sh`](./examples/booking-flow.sh).
 
+### Forms (SpiderFlow — developer/agent preview, v1.13.0+)
+
+Typeform-class multi-step forms — lead capture, NPS / CSAT surveys, intake forms, signup wizards. Reuses the same `booking_flows` table that powers SpiderBook, discriminated by `kind='form'`. Customer fills via the SpiderFlow embed loader (`embed.spideriq.ai/v1/loader.js`, 3 KB gzip ESM, inline + popup modes) or the standalone `/book/<flow_id>` route. **Status: developer / agent preview** — business-user dashboard ships in the next wave.
+
+> **MCP package caveat:** the 20 `form_*` tools are in **kitchen-sink `@spideriq/mcp@1.13.0`** (144 tools) — **not** in `@spideriq/mcp-publish@1.12.1` (124 tools, the starter-kit default). The split exists because Antigravity / Claude Desktop / Codex-on-Responses silently drop MCP servers that report >128 tools. To use the form tools: edit `.mcp.json` to point at `@spideriq/mcp@1.13.0`, OR add it as a second MCP server entry alongside `mcp-publish`.
+
+```
+form_create(name="Free trial signup", business_id="<uuid>", fields=[
+  {id:"q1", type:"email", label:"Your work email", required:true},
+  {id:"q2", type:"short_text", label:"Company name", required:true}
+])                                                                  → flow_id
+form_add_field(flow_id, field={id:"q3", type:"dropdown", label:"Team size",
+  options:[{label:"1-10", value:"small"}, {label:"11-50", value:"medium"}, {label:"51+", value:"large"}]})
+form_add_logic_rule(flow_id, rule={
+  when:{field_id:"q3", op:"equals", value:"large"},
+  then:{action:"jump_to", field_id:"q_enterprise"}
+})
+form_validate(flow={...})                                            → client-side; no API call
+form_test_submit(flow_id, answers={q1:"test@ex.com", q2:"Acme", q3:"small"})
+form_publish(flow_id, title="Trial Signup", length_minutes=1, team_id=0, dry_run=true)  → confirm_token
+form_publish(flow_id, confirm_token=...)                             → status: active
+form_get_embed_snippet(flow_id, mode="popup", button_text="Get Free Trial")
+                                                                     → <script> + <button> snippet
+```
+
+Embed on any third-party page (Webflow / Shopify / WordPress / plain HTML):
+```html
+<button data-spiderflow-flow="<flow_id>" data-spiderflow-mode="popup"
+        data-spiderflow-trigger-text="Get Free Trial">Get Free Trial</button>
+<script async src="https://embed.spideriq.ai/v1/loader.js"></script>
+```
+
+15+ field types: `short_text` / `long_text` / `email` / `phone` / `number` / `dropdown` / `checkbox` / `picture_choice` / `rating` / `nps` / `opinion_scale` / `date` / `file_upload` / `statement` / `yes_no`. Picture-choice options carry `image_url`; file-upload requires `accept[]`; opinion-scale `steps` in 5-11 range; rating requires `shape`.
+
+Conditional logic: `form_add_logic_rule` (jump-to / show / hide / set-variable / end-flow), `form_declare_variable` (string / number / boolean with type-checked defaults), `form_add_hidden_field` (URL-param capture: utm_source, ref, etc).
+
+Validation: `form_validate` runs whole-flow structural validation client-side — 14 rule classes (R0–R14) catching JSON shape, kind/schema_version, per-field-type invariants, hidden-field key uniqueness, logic rule cross-references. `form_validate_logic` validates rule shape only.
+
+**Backend caveats (current state, will resolve in next wave):**
+- `form_create` requires `business_id` (FK constraint) — pass any business UUID owned by the brand
+- `form_publish` requires Cal.com `title` / `length_minutes` / `team_id` — for form-kind, pass any non-empty title, `length_minutes=1`, `team_id=0`
+- `form_test_submit ?test=true` honoured for `LOAD_TEST_CLIENT_ID` only — for other clients, use a real flow with a unique answer payload + clean up manually
+
+**SpiderPublish VSCode extension 0.2.0+** treats `kind='form'` rows the same as pages: `Pull Content` writes each to `./forms/<flow_id>.json`; inline form validator catches 14 rule classes with red squiggles; `Push Content` includes form rows; `SpiderPublish: Preview Form` opens `/book/<flow_id>` in the browser.
+
+**`spideriq form` CLI** ships in `@spideriq/cli@1.13.0+` with 7 verbs (`create` / `get` / `update` / `publish` / `embed-snippet` / `responses list` / `responses get`). Mirrors `spideriq booking` 2-phase preview/confirm with `--yolo` / `--confirm <token>` / `--json`.
+
+**Full guide:** [shared/core-skills/forms/](./core-skills/forms/) (kit-internal path; degit users see this under their project's `core-skills/forms/`).
+
 ### IDAP (CRM Data)
 ```bash
 GET /api/v1/idap/businesses?limit=20&include=emails&format=yaml
@@ -735,6 +784,7 @@ Tier 3 `impl.ts` files use only Node 18+ stdlib (`fetch`, `fs`, `path`) — zero
 
 - [SpiderPublish Content Platform — Full MCP Surface](knowledge-items/11-spideriq-content-platform/) — Full content_* / directory_* / playbook_* MCP namespace overview: pages, posts, docs, navigation, settings, components, domains, directory pages, component site-wide propagation, section overrides.
 - [SpiderBook — Appointment-Booking MCP Surface](knowledge-items/12-spideriq-booking/) — Full booking_* MCP namespace: cal.
+- [SpiderFlow — Multi-Step Form Authoring MCP Surface](knowledge-items/21-spideriq-forms/) — Full form_* MCP namespace (20 tools): Typeform-class multi-step forms, lead capture, NPS / CSAT surveys, intake forms.
 - [Liquid Templates + Themes + Edge Deploy](knowledge-items/13-spideriq-templates-engine/) — template_* / content_deploy_site_* MCP surface for Liquid templates, themes, and Cloudflare edge deploy.
 - [SpiderMedia — Image / File / Video Upload](knowledge-items/14-spideriq-upload-host-media/) — media_* MCP namespace: upload images, files, videos to the SpiderMedia CDN.
 - [AgentDocs — Versioned Documentation Projects](knowledge-items/15-spideriq-agentdocs/) — agentdocs_* MCP namespace: build versioned documentation projects (Mintlify-style) with sidebar config, MDX pages, full-text search, and edge deploy.

@@ -2,6 +2,20 @@
 
 Things that cause silent failures or broken deploys. Read before building.
 
+## May 2026 — `form_*` tools missing in your IDE? Check your MCP package (SpiderFlow Wave 2, 2026-05-11)
+
+**The trap:** your agent reports `Unknown tool: form_create` (or any other `form_*` name) even though the kit's docs list 20 form tools. The form tools live in **`@spideriq/mcp@1.13.0`** (the kitchen-sink MCP package, 144 tools). The starter kit's default `.mcp.json` ships pointed at **`@spideriq/mcp-publish@1.12.1`** (the atomic publish package, 124 tools — none of which are `form_*`).
+
+The split is deliberate. Antigravity, Claude Desktop, and Codex-on-Responses silently drop MCP servers that report more than 128 tools. `mcp-publish` stays under the ceiling so it loads cleanly across every IDE; the kitchen-sink `mcp` package opts into the higher tool count.
+
+**Fix — pick one:**
+
+1. **Switch the existing entry:** edit `.mcp.json` and replace `@spideriq/mcp-publish` with `@spideriq/mcp@1.13.0`. You get every tool (publish + booking + forms + mail + leads + gate + admin) at the cost of the higher tool count. Recommended for agents primarily authoring forms.
+2. **Add a second MCP server:** keep `mcp-publish` as the default, add `mcp` as a second entry (call it `spideriq-forms` or similar) and only enable it when you're authoring forms. Recommended for agents that mostly do pages/posts/components and only occasionally touch forms.
+3. **Wait:** an atomic forms-only `@spideriq/mcp-forms` package is on the P1.6 follow-up roadmap — it will let you pull just the forms surface without the kitchen-sink overhead.
+
+When you switch to the kitchen-sink package on Antigravity / Claude Desktop, expect to use the antigravity proxy keep-list pattern (`~/.gemini/antigravity/mcp-proxy.js`) to filter the loaded tool set down to ≤120. The starter kit's setup-prompt walks through this on first contact.
+
 ## May 2026 — Stop shipping broken sections: read `_rules` on dry_run, `_audit` on success (P5, 2026-05-10)
 
 **The trap:** an AI agent inserts a component (especially a complex one — scroll-sequence, multistep form, dynamic block) without knowing the canonical authoring path. The block lands in the page, but renders broken at runtime — empty frames on a scroll-sequence, missing `submit_endpoint` on a form, hardcoded `provider=mapbox` without a configured key on a map. The agent gets `200 OK` on the insert and moves on; the breakage surfaces three roundtrips later when the dashboard preview loads, or worse, after deploy when a real visitor hits the page.

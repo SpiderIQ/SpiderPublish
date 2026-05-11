@@ -1,0 +1,454 @@
+# SpiderFlow Forms Skill — API Surface Definition
+#
+# Public reference for the @spideriq/mcp@1.13.0+ form_* tool surface.
+# Use this file as the source of truth when generating typed clients
+# or reasoning about parameter shapes.
+#
+# v1.0.0 (SpiderFlow Wave 2, P1.6 + P1.7 + P1.8, 2026-05-11):
+#   Initial release — 21 methods covering form authoring end-to-end.
+#   Mirrors the @spideriq/mcp@1.13.0 form_* tool surface (20 tools)
+#   plus the booking_flow_list ?kind= filter.
+
+name: spideriq-forms
+version: "1.0.0"
+description: >
+  Build and manage SpiderFlow forms — multi-step wizards, lead capture,
+  NPS / CSAT surveys. Discriminator-based on the booking_flows table
+  (kind='form'). 15+ field types, conditional logic with variables +
+  hidden fields, structural validation, embed snippet generation.
+  Customers fill via the SpiderFlow embed loader
+  (embed.spideriq.ai/v1/loader.js, inline or popup) or the standalone
+  /book/<flow_id> route.
+category: customer-forms
+base_url: /api/v1
+auth:
+  type: pat
+  header: Authorization
+  prefix: Bearer
+  env_var: SPIDERIQ_PAT
+defaults:
+  format: json
+  timeout_ms: 30000
+requires_brand: true
+triggers:
+  - form
+  - forms
+  - questionnaire
+  - survey
+  - nps
+  - csat
+  - lead capture
+  - typeform
+  - signup form
+  - intake form
+  - multi-step form
+  - opinion scale
+  - rating scale
+
+methods:
+  # -- Discovery (1 method) --------------------------------------
+  list_flows:
+    description: >
+      List flows in the caller's workspace, filtered by kind=form by
+      default. Cursor-paginated. Use to enumerate existing forms before
+      authoring a new one (avoid name collisions; reuse layouts).
+    http: GET /booking/flows
+    params:
+      kind:
+        type: string
+        required: false
+        default: form
+        description: "Filter by flow kind: booking|form|funnel|commerce. Omit to list all kinds."
+      status:
+        type: string
+        required: false
+        description: "Filter by status: draft|active|paused|archived"
+      limit:
+        type: integer
+        required: false
+        default: 50
+        description: Page size (1-200)
+      cursor:
+        type: string
+        required: false
+        description: Opaque keyset cursor from a prior response's next_cursor
+
+  # -- Lifecycle (6 methods) -------------------------------------
+  create_form:
+    description: >
+      Create a new form in draft status. Provide initial fields[] (at
+      least one) and a step_label for the lone FormStep. Returns the new
+      flow_id (UUID).
+    http: POST /booking/flows
+    params:
+      name:
+        type: string
+        required: true
+        description: Form display name shown on the dashboard list.
+      business_id:
+        type: string
+        required: true
+        description: >
+          Business UUID — required today by the FK constraint. Backend
+          follow-up will make this optional for kind='form'.
+      fields:
+        type: array
+        required: true
+        description: >
+          Initial FormField[] — at least one. Each: { id, type, label,
+          required?, options?, ... }. Use add_field to extend.
+      step_label:
+        type: string
+        required: false
+        default: Form
+        description: Label for the lone FormStep (default "Form").
+      template_id:
+        type: string
+        required: false
+        description: Optional template this form was cloned from.
+
+  get_form:
+    description: >
+      Fetch a form by id. Use audit_level='warnings' (default) to receive
+      a structural audit alongside the form blob; 'off' to skip; 'all' to
+      include info-level findings (when the form-auditor lands server-side).
+    http: GET /booking/flows/{flow_id}
+    params:
+      flow_id:
+        type: string
+        required: true
+        description: Form UUID.
+      audit_level:
+        type: string
+        required: false
+        default: warnings
+        description: "warnings | off | all (P5: server-side audit envelope)"
+
+  update_form:
+    description: >
+      Patch a form (name / flow / schema / template_id). Non-destructive
+      server-side — bumps version on any JSONB edit (G17 auto-version).
+    http: PATCH /booking/flows/{flow_id}
+    params:
+      flow_id:
+        type: string
+        required: true
+      patch:
+        type: object
+        required: true
+        description: >
+          Partial field set — name? / flow? / schema? / template_id?.
+          Only provided fields are updated.
+
+  delete_form:
+    description: >
+      Delete a form. Destructive — gated by 2-phase confirm (Phase 11+12 Lock 4).
+      First call returns confirm_token; second call with the token mutates.
+    http: DELETE /booking/flows/{flow_id}
+    params:
+      flow_id:
+        type: string
+        required: true
+      dry_run:
+        type: boolean
+        required: false
+        default: true
+        description: Preview without mutating. Defaults to true (safe-by-default).
+      confirm_token:
+        type: string
+        required: false
+        description: Token from a prior dry_run call. Single-use, 7d TTL.
+
+  publish_form:
+    description: >
+      Publish a form (status: draft → active). Destructive — gated.
+      BACKEND CAVEAT: today calls /publish which requires Cal.com title /
+      length_minutes / team_id. For form-kind, pass any non-empty title,
+      length_minutes=1, team_id=0 until backend is kind-aware.
+    http: POST /booking/flows/{flow_id}/publish
+    params:
+      flow_id:
+        type: string
+        required: true
+      title:
+        type: string
+        required: true
+        description: For form-kind, any non-empty string (Cal.com event title — not surfaced to form fillers).
+      length_minutes:
+        type: integer
+        required: true
+        default: 1
+        description: For form-kind, set to 1 (ignored once backend is kind-aware).
+      team_id:
+        type: integer
+        required: true
+        default: 0
+        description: For form-kind, set to 0 (ignored once backend is kind-aware).
+      dry_run:
+        type: boolean
+        required: false
+        default: true
+      confirm_token:
+        type: string
+        required: false
+
+  duplicate_form:
+    description: >
+      Duplicate a form. Composed client-side as get + create with " (copy)"
+      suffix on the source name. Server-side endpoint is a backend follow-up.
+    http: client-side (get + create)
+    params:
+      flow_id:
+        type: string
+        required: true
+        description: Source form UUID.
+      new_name:
+        type: string
+        required: false
+        description: Override the duplicated form's name. Default → source.name + " (copy)".
+
+  # -- Step composition (5 methods) ------------------------------
+  add_field:
+    description: >
+      Append a field to the form. Field type determines required
+      sub-properties (e.g. picture_choice requires options[].image_url;
+      file_upload requires accept[]; rating requires shape; opinion_scale
+      requires steps in 5-11 range).
+    http: PATCH /booking/flows/{flow_id}
+    params:
+      flow_id:
+        type: string
+        required: true
+      field:
+        type: object
+        required: true
+        description: >
+          A single FormField object: { id, type, label, required?,
+          options?, accept?, shape?, steps?, ... }. Type is one of
+          short_text | long_text | email | phone | number | dropdown |
+          checkbox | picture_choice | rating | nps | opinion_scale | date
+          | file_upload | statement | yes_no.
+      position:
+        type: integer
+        required: false
+        description: Insert at this 0-based index. Defaults to end-of-list.
+
+  update_field:
+    description: >
+      Patch a single field by id. Merged onto the existing field — only
+      provided keys are overwritten.
+    http: PATCH /booking/flows/{flow_id}
+    params:
+      flow_id:
+        type: string
+        required: true
+      field_id:
+        type: string
+        required: true
+        description: The FieldSchema.id to update.
+      patch:
+        type: object
+        required: true
+        description: Partial field shape — merged onto the existing field.
+
+  remove_field:
+    description: >
+      Remove a field by id. Cascades — drops any logic rules that
+      reference the removed field. Returns dropped_logic_rules count.
+    http: PATCH /booking/flows/{flow_id}
+    params:
+      flow_id:
+        type: string
+        required: true
+      field_id:
+        type: string
+        required: true
+
+  reorder_fields:
+    description: >
+      Reorder fields by providing a complete permutation of current field
+      ids. Validates the order is exactly a permutation (no missing /
+      extra ids).
+    http: PATCH /booking/flows/{flow_id}
+    params:
+      flow_id:
+        type: string
+        required: true
+      order:
+        type: array
+        required: true
+        description: New field-id order (must be a permutation of current ids).
+
+  add_choice:
+    description: >
+      Add an option to a choice-type field (select / checkbox /
+      picture_choice). For picture_choice, image_url is REQUIRED.
+    http: PATCH /booking/flows/{flow_id}
+    params:
+      flow_id:
+        type: string
+        required: true
+      field_id:
+        type: string
+        required: true
+      option:
+        type: object
+        required: true
+        description: "FieldOption — { label, value, image_url? }. image_url required for picture_choice."
+
+  # -- Logic (3 methods) -----------------------------------------
+  add_logic_rule:
+    description: >
+      Add a conditional logic rule (jump-to / show / hide / set-variable
+      / end-flow). Rules are evaluated in order; first match wins per
+      step.
+    http: PATCH /booking/flows/{flow_id}
+    params:
+      flow_id:
+        type: string
+        required: true
+      rule:
+        type: object
+        required: true
+        description: A single LogicRule object.
+
+  validate_logic:
+    description: >
+      Client-side structural validation of LogicRule[]. No API call.
+      Catches malformed conditions, dangling field-id references, action
+      shape mismatches.
+    http: client-side
+    params:
+      rules:
+        type: array
+        required: true
+        description: LogicRule[] to validate locally.
+
+  remove_logic:
+    description: >
+      Remove a LogicRule by rule_id (UUID) or by zero-based index.
+      Provide exactly one.
+    http: PATCH /booking/flows/{flow_id}
+    params:
+      flow_id:
+        type: string
+        required: true
+      rule_id:
+        type: string
+        required: false
+        description: LogicRule.rule_id (UUID).
+      index:
+        type: integer
+        required: false
+        description: Zero-based index into flow.logic[].
+
+  # -- Variables / hidden (2 methods) ----------------------------
+  declare_variable:
+    description: >
+      Declare a variable (string / number / boolean) usable in conditions
+      and actions. Optional default value type-checked against the
+      declared type.
+    http: PATCH /booking/flows/{flow_id}
+    params:
+      flow_id:
+        type: string
+        required: true
+      name:
+        type: string
+        required: true
+        description: Variable name (used in conditions + actions).
+      declaration:
+        type: object
+        required: true
+        description: "VariableDecl — { type, default? }"
+
+  add_hidden_field:
+    description: >
+      Declare a hidden field (URL-param capture, e.g. utm_source). Key
+      uniqueness enforced client-side — duplicate keys rejected.
+    http: PATCH /booking/flows/{flow_id}
+    params:
+      flow_id:
+        type: string
+        required: true
+      hidden_field:
+        type: object
+        required: true
+        description: "HiddenField — { key, label?, default_value? }"
+
+  # -- Embed (1 method) ------------------------------------------
+  get_embed_snippet:
+    description: >
+      Build a copy-paste HTML snippet (inline or popup) that mounts the
+      form on any third-party page via embed.spideriq.ai/v1/loader.js.
+      Local-only — no API call. Returns the URL regardless of P1.9
+      loader deployment state.
+    http: client-side
+    params:
+      flow_id:
+        type: string
+        required: true
+      mode:
+        type: string
+        required: false
+        default: inline
+        description: "Embed mode: inline | popup"
+      button_text:
+        type: string
+        required: false
+        default: Open Form
+        description: Popup button text. Ignored for inline.
+      prefill:
+        type: object
+        required: false
+        description: Map of hidden-field key → default value (emitted as data-prefill-<key>).
+
+  # -- Validation (3 methods) ------------------------------------
+  validate:
+    description: >
+      Whole-flow structural validation. 14 rule classes (R0-R14) — JSON
+      shape, kind/schema_version, flow array bounds, per-field-type
+      invariants, thankyou-screen invariants, hidden-field key
+      uniqueness, logic rule cross-references. Returns errors[] +
+      warnings[] with JSONPath positions. Client-side; no API call.
+    http: client-side
+    params:
+      flow:
+        type: object
+        required: true
+        description: A complete flow JSON blob to validate.
+
+  preview_url:
+    description: >
+      Return the deterministic public preview URL for a form — /book/{flow_id}.
+      No API call; just composes the URL.
+    http: client-side
+    params:
+      flow_id:
+        type: string
+        required: true
+
+  test_submit:
+    description: >
+      Submit a test answer payload to the public submit endpoint with
+      ?test=true. Auto-generates Idempotency-Key header. BACKEND CAVEAT:
+      today honoured only for LOAD_TEST_CLIENT_ID; broader honour is a
+      backend follow-up.
+    http: POST /booking/{flow_id}/submit?test=true
+    params:
+      flow_id:
+        type: string
+        required: true
+      answers:
+        type: object
+        required: true
+        description: Test answer payload — maps step_id → answer dict.
+      idempotency_key:
+        type: string
+        required: false
+        description: Optional Idempotency-Key header (auto-generated if absent).
+      timezone:
+        type: string
+        required: false
+        default: UTC
+        description: X-Customer-Timezone header.
