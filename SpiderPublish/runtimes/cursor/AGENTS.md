@@ -424,11 +424,11 @@ Reads: `booking_list(business_id, status?, since?)`, `booking_get(booking_id)`. 
 
 **Full guide:** [skills/booking/](./skills/booking/) · **End-to-end example:** [`examples/booking-flow.sh`](./examples/booking-flow.sh).
 
-### Forms (SpiderFlow — developer/agent preview, v1.13.0+)
+### Forms (SpiderFlow — GA, v1.14.5+)
 
-Typeform-class multi-step forms — lead capture, NPS / CSAT surveys, intake forms, signup wizards. Reuses the same `booking_flows` table that powers SpiderBook, discriminated by `kind='form'`. Customer fills via the SpiderFlow embed loader (`embed.spideriq.ai/v1/loader.js`, 3 KB gzip ESM, inline + popup modes) or the standalone `/book/<flow_id>` route. **Status: developer / agent preview** — business-user dashboard ships in the next wave.
+Typeform-class multi-step forms — lead capture, NPS / CSAT surveys, intake forms, signup wizards. Reuses the same `booking_flows` table that powers SpiderBook, discriminated by `kind='form'`. Customer fills via the SpiderFlow embed loader (`embed.spideriq.ai/v1/loader.js`, 3 KB gzip ESM, inline + popup modes) or the standalone `/book/<flow_id>` route. **Status: GA** (P1 closure 2026-05-14). Business-user dashboard ships at `/dashboard/forms` (list + preview + embed + responses + settings).
 
-> **MCP package caveat:** the 20 `form_*` tools are in **kitchen-sink `@spideriq/mcp@1.13.0`** (144 tools) — **not** in `@spideriq/mcp-publish@1.12.1` (124 tools, the starter-kit default). The split exists because Antigravity / Claude Desktop / Codex-on-Responses silently drop MCP servers that report >128 tools. To use the form tools: edit `.mcp.json` to point at `@spideriq/mcp@1.13.0`, OR add it as a second MCP server entry alongside `mcp-publish`.
+> **MCP package caveat:** the 20 `form_*` tools are in **kitchen-sink `@spideriq/mcp@1.14.5`** — **not** in `@spideriq/mcp-publish` (the starter-kit default). The split exists because Antigravity / Claude Desktop / Codex-on-Responses silently drop MCP servers that report >128 tools. To use the form tools: edit `.mcp.json` to point at `@spideriq/mcp@1.14.5`, OR add it as a second MCP server entry alongside `mcp-publish`.
 
 ```
 form_create(name="Free trial signup", business_id="<uuid>", fields=[
@@ -456,20 +456,76 @@ Embed on any third-party page (Webflow / Shopify / WordPress / plain HTML):
 <script async src="https://embed.spideriq.ai/v1/loader.js"></script>
 ```
 
-15+ field types: `short_text` / `long_text` / `email` / `phone` / `number` / `dropdown` / `checkbox` / `picture_choice` / `rating` / `nps` / `opinion_scale` / `date` / `file_upload` / `statement` / `yes_no`. Picture-choice options carry `image_url`; file-upload requires `accept[]`; opinion-scale `steps` in 5-11 range; rating requires `shape`.
+17 field types: `short_text` / `long_text` / `email` / `phone` / `number` / `dropdown` / `checkbox` / `picture_choice` / `rating` / `nps` / `opinion_scale` / `date` / `file_upload` / `statement` / `yes_no` / `payment-marker`. Picture-choice options carry `image_url`; file-upload requires `accept[]`; opinion-scale `steps` in 5-11 range; rating requires `shape`.
 
 Conditional logic: `form_add_logic_rule` (jump-to / show / hide / set-variable / end-flow), `form_declare_variable` (string / number / boolean with type-checked defaults), `form_add_hidden_field` (URL-param capture: utm_source, ref, etc).
 
 Validation: `form_validate` runs whole-flow structural validation client-side — 14 rule classes (R0–R14) catching JSON shape, kind/schema_version, per-field-type invariants, hidden-field key uniqueness, logic rule cross-references. `form_validate_logic` validates rule shape only.
 
-**Backend caveats (current state, will resolve in next wave):**
-- `form_create` requires `business_id` (FK constraint) — pass any business UUID owned by the brand
-- `form_publish` requires Cal.com `title` / `length_minutes` / `team_id` — for form-kind, pass any non-empty title, `length_minutes=1`, `team_id=0`
-- `form_test_submit ?test=true` honoured for `LOAD_TEST_CLIENT_ID` only — for other clients, use a real flow with a unique answer payload + clean up manually
+#### Locking + versioning (P1.X)
+
+Forms can be locked during client review or scheduled launch windows. Lock is enforced **inside** the mutation SQL (same TOCTOU-safe pattern as P4 page locking), so a writing agent never observes a "lock then someone else mutates" race.
+
+```
+form_lock(flow_id, reason="client review")              → idempotent
+form_list_versions(flow_id) → [{version: N, change_summary, changed_at, ...}]
+form_restore_version(flow_id, version_number=N, dry_run=true)  → confirm_token
+form_restore_version(flow_id, version_number=N, confirm_token=...)  → restored, status='draft'
+form_unlock(flow_id)                                    → idempotent
+```
+
+Mutations on a locked form return **423 Locked** with this envelope shape:
+
+```json
+{
+  "error": "form_locked",
+  "message": "Form is locked by api:cli_xxx.",
+  "locked_by_actor_id": "api:cli_xxx",
+  "locked_at": "<ISO-8601>",
+  "locked_reason": "client review",
+  "unlock_endpoint": "/api/v1/booking/flows/<flow_id>/unlock"
+}
+```
+
+**Don't loop on 423.** Surface the lock provenance to the caller and `form_unlock` only if you're the authorised actor. `super_admin` / `brand_admin` can pass `force=true` to override another actor's lock; everyone else gets `403 force_required`.
+
+#### Responses (P1.M1)
+
+Agents read submissions without going through the dashboard:
+
+```
+form_responses_list(flow_id, completion_status="complete", since="2026-05-13T00:00:00Z")
+  → [{submission_id, submitted_at, source: "embed"|"popup"|"web"|"api", answer_count, ...}]
+
+form_responses_get(flow_id, submission_id)
+  → full answers payload + hidden fields + recall tokens resolved
+```
+
+Lock state does NOT block reads.
+
+#### LogicRule canonical shape (P1.W5)
+
+Conditions in logic rules use exactly this shape — backend friendly-error emits ONE actionable error if you send anything else (no more 6-error Pydantic Union cascades):
+
+```json
+{
+  "op": "<one of 18 operators>",
+  "left":  {"kind": "field|literal|var", "value": "<any>"},
+  "right": {"kind": "field|literal|var", "value": "<any>"}
+}
+```
+
+`right` is optional for unary operators (`is_empty`, `is_not_empty`, `is_true`, `is_false`).
+
+#### Sentinel-business pattern (P1.Z)
+
+`booking_flows.business_id` is `NOT NULL FK` from the booking-side migration 123. `kind='form'` flows don't represent a business. **Agents should OMIT `business_id` on `form_create`** — the backend resolves a per-tenant find-or-create sentinel business named `{{ spiderflow.forms.sentinel }}` transparently. If you pass a `business_id` it's accepted (back-compat), but the recommended call is to leave it off.
+
+#### CLI + extension
 
 **SpiderPublish VSCode extension 0.2.0+** treats `kind='form'` rows the same as pages: `Pull Content` writes each to `./forms/<flow_id>.json`; inline form validator catches 14 rule classes with red squiggles; `Push Content` includes form rows; `SpiderPublish: Preview Form` opens `/book/<flow_id>` in the browser.
 
-**`spideriq form` CLI** ships in `@spideriq/cli@1.13.0+` with 7 verbs (`create` / `get` / `update` / `publish` / `embed-snippet` / `responses list` / `responses get`). Mirrors `spideriq booking` 2-phase preview/confirm with `--yolo` / `--confirm <token>` / `--json`.
+**`spideriq form` CLI** ships in `@spideriq/cli@1.14.5` with 7 verbs (`create` / `get` / `update` / `publish` / `embed-snippet` / `responses list` / `responses get`). Mirrors `spideriq booking` 2-phase preview/confirm with `--yolo` / `--confirm <token>` / `--json`.
 
 **Full guide:** [shared/core-skills/forms/](./core-skills/forms/) (kit-internal path; degit users see this under their project's `core-skills/forms/`).
 
@@ -779,12 +835,13 @@ Tier 3 `impl.ts` files use only Node 18+ stdlib (`fetch`, `fs`, `path`) — zero
 - [Build a Programmatic Directory (Category / City / Listing)](.cursor/rules/directory.mdc) — Build /directory/{category}/{city}/{listing} pages programmatically: create category → bulk-upsert listings (or import from IDAP) → deploy.
 - [Audit Internal Links Before Deploy](.cursor/rules/link-audit.mdc) — Scan the tenant's published surface for broken internal links (404s, redirects, mistyped slugs) before deploy.
 - [Migrate a Tilda / Webflow / Lovable Site to SpiderPublish](.cursor/rules/tilda-migration.mdc) — End-to-end migration from a Tilda export (or Webflow / Lovable export): section → component → page → publish, with auto_extract_css for one-file imports.
+- [Bootstrap a Form from a Seed Template](.cursor/rules/form-from-template.mdc) — Bootstrap a publishable SpiderFlow form from one of 5 seeded global templates (lead-gen-quiz / contact / nps / job-application / event-rsvp) in a single agent-callable step.
 
 ### Core MCP-namespace skills
 
 - [SpiderPublish Content Platform — Full MCP Surface](.cursor/rules/content-platform.mdc) — Full content_* / directory_* / playbook_* MCP namespace overview: pages, posts, docs, navigation, settings, components, domains, directory pages, component site-wide propagation, section overrides.
 - [SpiderBook — Appointment-Booking MCP Surface](.cursor/rules/booking.mdc) — Full booking_* MCP namespace: cal.
-- [SpiderFlow — Multi-Step Form Authoring MCP Surface](.cursor/rules/forms.mdc) — Full form_* MCP namespace (20 tools): Typeform-class multi-step forms, lead capture, NPS / CSAT surveys, intake forms.
+- [SpiderFlow — Multi-Step Form Authoring (GA, P1 closure)](.cursor/rules/forms.mdc) — Full form_* MCP namespace (GA 2026-05-14, P1 closure).
 - [Liquid Templates + Themes + Edge Deploy](.cursor/rules/templates-engine.mdc) — template_* / content_deploy_site_* MCP surface for Liquid templates, themes, and Cloudflare edge deploy.
 - [SpiderMedia — Image / File / Video Upload](.cursor/rules/upload-host-media.mdc) — media_* MCP namespace: upload images, files, videos to the SpiderMedia CDN.
 - [AgentDocs — Versioned Documentation Projects](.cursor/rules/agentdocs.mdc) — agentdocs_* MCP namespace: build versioned documentation projects (Mintlify-style) with sidebar config, MDX pages, full-text search, and edge deploy.

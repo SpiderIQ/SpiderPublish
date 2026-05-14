@@ -2,6 +2,70 @@
 
 Things that cause silent failures or broken deploys. Read before building.
 
+## May 2026 — Forms reuse `booking_flows.business_id`, but agents should OMIT it on form_create (P1.Z sentinel-business, 2026-05-14)
+
+**The trap:** `booking_flows.business_id` is `NOT NULL FK` from the booking-side migration 123. A `kind='form'` flow doesn't represent a business — but the FK doesn't go away just because we discriminated the table. If an agent passes `business_id=null` it hits the constraint; if it passes a random UUID it hits the FK; if it picks a real business in the tenant it's correct but the form gets visually grouped under that business in any future report.
+
+**The fix:** **OMIT `business_id` on `form_create`.** The backend (P1.Z) resolves a per-tenant find-or-create sentinel business named `{{ spiderflow.forms.sentinel }}` transparently — the FK is satisfied without exposing the row in any business-facing surface.
+
+Older docs that said "pass any business UUID owned by the brand" predate P1.Z + P1.W3 (per-form sentinel correction). They still work for back-compat, but they're not the recommended path.
+
+## May 2026 — 423 Locked on form mutations — don't retry, surface lock provenance (P1.X, 2026-05-14)
+
+**The trap:** an agent PATCHes a form during client review and gets `423 Locked`. Without a structured envelope, a naive agent retries — and keeps retrying. With a structured envelope, a naive agent ignores the body and surfaces "PATCH failed". Neither is helpful.
+
+**The shape:**
+
+```json
+{
+  "error": "form_locked",
+  "message": "Form is locked by api:cli_xxx.",
+  "locked_by_actor_id": "api:cli_xxx",
+  "locked_at": "<ISO-8601>",
+  "locked_reason": "client review",
+  "unlock_endpoint": "/api/v1/booking/flows/<flow_id>/unlock"
+}
+```
+
+**Recovery path for the agent:**
+
+1. STOP retrying. The lock is enforced inside the mutation SQL (`WHERE is_locked = false`) — every retry will fail until the lock is released.
+2. Surface `locked_by_actor_id` + `locked_reason` + `unlock_endpoint` to the user. The reason tells you WHY (client review, scheduled launch, debugging); the actor tells you WHO can unlock.
+3. If you (the calling agent) ARE the `locked_by_actor_id`, call `form_unlock` — it's idempotent and safe.
+4. If you aren't, ask the user. Don't `force=true` unless you have `super_admin` or `brand_admin` (you'll get `403 force_required` if you don't).
+5. After mutation succeeds, the lock state is preserved — don't `form_lock` again unless you explicitly want to lock it (it was already locked).
+
+Mirrors P4 page locking. See [agents-catalog.md → Forms → Locking + versioning](./agents-catalog.md#locking--versioning-p1x) for the full surface.
+
+## May 2026 — LogicRule canonical shape is `{op, left, right?}` — flat-leaf shapes get a friendly error now (P1.W5, 2026-05-14)
+
+**The trap:** earlier docs (and some Typeform examples) wrote logic conditions as flat leaves: `{field_id: "q1", op: "equals", value: "Yes"}`. The backend Pydantic schema is `Union[ConditionGroup, Condition]` — a flat leaf doesn't match either arm, so pre-P1.W5 Pydantic emitted a 6-error Union cascade (`field_required` on `kind` + `extra_forbidden` on `field_id` + `extra_forbidden` on `value` + …). None of those errors named the canonical shape. Agents would read the error pile and assume "the schema is broken".
+
+**The fix (P1.W5):** the schema gained a `mode='before'` pre-discriminator that emits ONE friendly error naming the canonical shape:
+
+```json
+{
+  "op": "<one of 18 operators>",
+  "left":  {"kind": "field|literal|var", "value": "<any>"},
+  "right": {"kind": "field|literal|var", "value": "<any>"}
+}
+```
+
+`right` is optional for unary operators (`is_empty`, `is_not_empty`, `is_true`, `is_false`).
+
+**Worked example — replace your old flat-leaf shape:**
+
+```diff
+- {"field_id": "q1", "op": "equals", "value": "Yes"}
++ {"op": "equals",
++  "left":  {"kind": "field", "value": "q1"},
++  "right": {"kind": "literal", "value": "Yes"}}
+```
+
+If you see the old 6-error Union cascade instead of the friendly single-error, you're targeting a pre-P1.W5 backend (older than `api-gateway-family:sf-p1-w5-40f65c9`).
+
+This canonical shape mirrors across **four surfaces** — Pydantic schema, Zod test fixtures, MCP `form_add_logic_rule` description, and the build-plan harness template. If you find a fifth surface (e.g. extension JSON schema) that disagrees, file a follow-up.
+
 ## May 2026 — `form_*` tools missing in your IDE? Check your MCP package (SpiderFlow Wave 2, 2026-05-11)
 
 **The trap:** your agent reports `Unknown tool: form_create` (or any other `form_*` name) even though the kit's docs list 20 form tools. The form tools live in **`@spideriq/mcp@1.13.0`** (the kitchen-sink MCP package, 144 tools). The starter kit's default `.mcp.json` ships pointed at **`@spideriq/mcp-publish@1.12.1`** (the atomic publish package, 124 tools — none of which are `form_*`).

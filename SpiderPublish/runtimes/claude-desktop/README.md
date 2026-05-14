@@ -52,6 +52,7 @@ For task-specific recipes, paste the relevant skill body from [shared/recipes/](
 - **Build a Programmatic Directory (Category / City / Listing)** — `shared/recipes/directory/SKILL.md`
 - **Audit Internal Links Before Deploy** — `shared/recipes/link-audit/SKILL.md`
 - **Migrate a Tilda / Webflow / Lovable Site to SpiderPublish** — `shared/recipes/tilda-migration/SKILL.md`
+- **Bootstrap a Form from a Seed Template** — `shared/recipes/form-from-template/SKILL.md`
 
 ## 4. Optional: build via the CLI
 
