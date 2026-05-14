@@ -129,8 +129,15 @@
       "id": "forms",
       "kind": "core",
       "ki_index": 21,
-      "title": "SpiderFlow — Multi-Step Form Authoring MCP Surface",
-      "summary": "Full form_* MCP namespace (20 tools): Typeform-class multi-step forms, lead capture, NPS / CSAT surveys, intake forms. Reuses booking_flows table with kind='form'. 15+ field types, conditional logic with variables + hidden fields, structural validation, embed snippet generation via the embed.spideriq.ai/v1/loader.js loader (3 KB, inline + popup). NOT in @spideriq/mcp-publish — only in kitchen-sink @spideriq/mcp@1.13.0. Use whenever the user asks for 'a form', 'survey', 'questionnaire', 'NPS', 'lead capture', 'intake form', 'Typeform alternative'."
+      "title": "SpiderFlow — Multi-Step Form Authoring (GA, P1 closure)",
+      "summary": "Full form_* MCP namespace (GA 2026-05-14, P1 closure). 27 methods (lifecycle + step composition + logic + variables + hidden + embed + validation + locking + versioning + responses). Typeform-class multi-step forms, lead capture, NPS / CSAT surveys, intake forms. Reuses booking_flows table with kind='form' (P1.Z sentinel-business pattern — agents OMIT business_id). 17 field types, conditional logic with canonical {op, left, right?} LogicRule shape (P1.W5), structural validation, per-form locking + version restore (P1.X) with 423 Locked envelope, submissions list/get (P1.M1), embed snippet generation via embed.spideriq.ai/v1/loader.js (3 KB, inline + popup). NOT in @spideriq/mcp-publish — only in kitchen-sink @spideriq/mcp@1.14.6. Use whenever the user asks for 'a form', 'survey', 'questionnaire', 'NPS', 'lead capture', 'intake form', 'Typeform alternative'."
+    },
+    {
+      "id": "form-from-template",
+      "kind": "recipe",
+      "ki_index": 22,
+      "title": "Bootstrap a Form from a Seed Template",
+      "summary": "Bootstrap a publishable SpiderFlow form from one of 5 seeded global templates (lead-gen-quiz / contact / nps / job-application / event-rsvp) in a single agent-callable step. Takes a template slug + optional customisation deltas (rename + override field labels + override logic + override hidden field defaults) and returns a published flow_id ready to embed. Phase 11+12 dry_run/confirm_token gate is handled inside. Use whenever an agent needs to spin up a working form fast: 'add an NPS survey', 'I need a contact form', 'add a quick lead-gen quiz', 'event RSVP form', 'job application form'."
     },
     {
       "id": "templates-engine",

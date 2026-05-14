@@ -1,0 +1,133 @@
+name: form-from-template
+tier: 3
+description: >
+  Bootstrap a publishable SpiderFlow form from one of the seeded global
+  templates (P1.M3) in a single agent-callable step. Takes a template slug
+  + optional customisation deltas (rename + override field labels + override
+  logic + override hidden field defaults) and returns a published flow_id
+  ready to embed.
+
+  Tier 3 plugin shim — Node 18+ stdlib only, zero npm deps. Wraps
+  form_list_templates / form_get_template / form_create / form_publish in
+  one mental model. The dry_run/confirm_token gate is handled inside.
+
+  Seeded templates (5): lead-gen-quiz, contact, nps, job-application,
+  event-rsvp. See SKILL.md for the per-template field-count + notable-feature
+  matrix.
+
+inputs:
+  template_slug:
+    type: string
+    required: true
+    description: >
+      Seed template to bootstrap from. One of: lead-gen-quiz, contact, nps,
+      job-application, event-rsvp. Call form_list_templates first if you're
+      not sure which seed best matches the use case.
+  name:
+    type: string
+    required: false
+    description: >
+      Custom name for the new form. Defaults to the template's name suffixed
+      with a short timestamp ("Contact form 2026-05-14") to avoid collisions
+      within the tenant.
+  field_overrides:
+    type: object
+    required: false
+    description: >
+      Map of field_id → field-override-patch. Each patch may set label /
+      description / placeholder / required / options[].label. Cannot change
+      type or id — types are pinned by the template.
+  logic_overrides:
+    type: array
+    required: false
+    description: >
+      Replace the template's logic[] array entirely. Each rule MUST use the
+      canonical {op, left, right?} shape (P1.W5). Omit to keep template logic.
+  hidden_field_overrides:
+    type: object
+    required: false
+    description: >
+      Map of hidden_field_key → default_value. Common use case — pin
+      event_id, campaign_id, or utm_* defaults on a per-flow basis.
+  publish:
+    type: boolean
+    required: false
+    default: true
+    description: >
+      If true (default), runs the dry_run/confirm_token gate and publishes
+      the form to status='active'. If false, leaves it in draft for further
+      editing.
+
+# Primary action — create from template
+one_shot:
+  - id: validate_template
+    tool: form_get_template
+    args:
+      template_slug: "{{ inputs.template_slug }}"
+    on_error:
+      404: |
+        Template "{{ inputs.template_slug }}" not found.
+        Call form_list_templates(kind="form") to list available seeds.
+
+  - id: create
+    tool: form_create
+    args:
+      kind: form
+      name: "{{ inputs.name | default(template_slug + ' ' + now('YYYY-MM-DD')) }}"
+      template_id: "{{ inputs.template_slug }}"
+      field_overrides: "{{ inputs.field_overrides | default({}) }}"
+      logic_overrides: "{{ inputs.logic_overrides | default([]) }}"
+      hidden_field_overrides: "{{ inputs.hidden_field_overrides | default({}) }}"
+    captures:
+      flow_id: response.flow_id
+
+  - id: publish_dry_run
+    when: "{{ inputs.publish | default(true) }}"
+    tool: form_publish
+    args:
+      flow_id: "{{ captures.flow_id }}"
+      dry_run: true
+    captures:
+      confirm_token: response.confirm_token
+
+  - id: publish_confirm
+    when: "{{ inputs.publish | default(true) }}"
+    tool: form_publish
+    args:
+      flow_id: "{{ captures.flow_id }}"
+      confirm_token: "{{ captures.confirm_token }}"
+
+# Returns
+outputs:
+  flow_id:
+    source: captures.flow_id
+    description: UUID of the newly created form.
+  status:
+    source: response.status
+    description: "'draft' if publish=false; 'active' otherwise."
+  embed_endpoint:
+    source: "/book/{{ captures.flow_id }}"
+    description: Public URL where the form renders.
+
+# Notes
+notes: |
+  - business_id is intentionally NOT a recipe input. The backend resolves a
+    per-tenant sentinel business automatically for kind='form' rows (P1.Z).
+
+  - Field overrides cannot change type/id — they're pinned by the seed
+    template. To swap a field type, create a bare form instead and add
+    fields manually via form_add_field.
+
+  - logic_overrides REPLACES the template's logic[] array entirely. If you
+    just want to ADD a rule, get the template first (form_get_template),
+    append your rule to template.flow.logic, and pass the combined array.
+
+  - hidden_field_overrides only sets DEFAULT values. The template's
+    hidden_fields[] array structure (keys, labels) is preserved; only the
+    default_value field per key is overridden.
+
+  - LogicRule canonical shape per P1.W5 cross-surface alignment:
+        {"op": "<op>",
+         "left":  {"kind": "field|literal|var", "value": "<any>"},
+         "right": {"kind": "field|literal|var", "value": "<any>"}}
+    Flat-leaf shapes get a friendly Pydantic error naming this shape.

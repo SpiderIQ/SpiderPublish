@@ -1,0 +1,9 @@
+{
+  "title": "Bootstrap a Form from a Seed Template",
+  "summary": "Bootstrap a publishable SpiderFlow form from one of 5 seeded global templates (lead-gen-quiz / contact / nps / job-application / event-rsvp) in a single agent-callable step. Takes a template slug + optional customisation deltas (rename + override field labels + override logic + override hidden field defaults) and returns a published flow_id ready to embed. Phase 11+12 dry_run/confirm_token gate is handled inside. Use whenever an agent needs to spin up a working form fast: 'add an NPS survey', 'I need a contact form', 'add a quick lead-gen quiz', 'event RSVP form', 'job application form'.",
+  "createdAt": "2026-05-08T00:00:00Z",
+  "updatedAt": "2026-05-14T23:24:20Z",
+  "references": [
+    "shared/recipes/form-from-template/"
+  ]
+}

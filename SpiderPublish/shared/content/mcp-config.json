@@ -7,6 +7,16 @@
         "SPIDERIQ_FORMAT": "yaml",
         "npm_config_registry": "https://npm.spideriq.ai"
       }
+    },
+    "spideriq-forms": {
+      "_comment": "OPT-IN: SpiderFlow forms (20 form_* tools). Kitchen-sink @spideriq/mcp exceeds the 128-tool ceiling on Antigravity / Claude Desktop / Codex-on-Responses; enable only when authoring forms. See shared/content/learnings.md.",
+      "command": "npx",
+      "args": ["-y", "@spideriq/mcp@1.14.6"],
+      "env": {
+        "SPIDERIQ_FORMAT": "yaml",
+        "npm_config_registry": "https://npm.spideriq.ai"
+      },
+      "disabled": true
     }
   }
 }
