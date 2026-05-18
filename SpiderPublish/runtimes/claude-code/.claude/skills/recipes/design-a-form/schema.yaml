@@ -1,0 +1,179 @@
+name: design-a-form
+tier: 2
+description: >
+  Give a Form a real visual identity — pick one of six bundled presets,
+  override the design tokens that matter (--primary, --button-radius,
+  --font-heading, …), and add per-question media (background image,
+  side-image split, or video). Everything ships through the `theme`
+  argument on form_create / form_update and the `media` field on
+  individual form fields. The renderer silently drops unknown keys and
+  unsafe values (url() from end-user input, javascript:, expression()).
+
+inputs:
+  flow_id:
+    type: string
+    required: false
+    hint: >
+      Existing form to retheme. Omit and the recipe uses form_create with
+      the supplied theme on first publish.
+  preset:
+    type: string
+    required: false
+    hint: >
+      One of card-light | fullscreen-dark | conversational-left |
+      form-on-image | minimal-print | agency-bold. Omit for the neutral
+      default look.
+  tokens:
+    type: object
+    required: false
+    hint: >
+      Map of canonical CSS custom property names (`--primary`,
+      `--button-radius`, …) → short CSS values. 256 char max per value.
+      256-char limit; up to 64 entries. Aliases (primary_color,
+      background_color, font_family, …) are auto-canonicalised.
+  per_question_media:
+    type: array
+    required: false
+    hint: >
+      Array of { field_id, media } pairs where media is
+      { url, type: image|video, position: background|left|right|top,
+      opacity?, poster_url? }. Opacity is only honoured for
+      position=background. left/right collapse to stacked at <=768px.
+
+presets:
+  card-light:
+    summary: Default neutral light blue, contained 640px card, 8px button radius, light shadow. Safe SaaS / B2B choice.
+  fullscreen-dark:
+    summary: Apple-product-reveal feel — black/white, pill buttons (radius 999px), 880px wide, 2.25rem headings, 2rem field-gap.
+  conversational-left:
+    summary: Typeform-classic — green accent, underlined inputs (radius 0, transparent bg), 560px column, 1.75rem field-gap.
+  form-on-image:
+    summary: Editorial / luxury — indigo→violet linear-gradient bg, glassy translucent inputs, gold primary, 720px wide.
+  minimal-print:
+    summary: Magazine / law-firm — all-black --primary, serif heading font, zero shadows, square corners.
+  agency-bold:
+    summary: Bright agency — pink primary, violet accent, pill buttons, soft pink shadow. Pairs with playful copy.
+
+popular_tokens:
+  colour:
+    - "--primary"             # buttons, progress fill, focused borders
+    - "--primary-contrast"    # text on top of --primary
+    - "--bg"                  # page background
+    - "--surface"             # card / input background
+    - "--text"                # body text colour
+    - "--accent"              # secondary highlight
+  type:
+    - "--font-body"           # body text font stack
+    - "--font-heading"        # question + screen headings
+    - "--font-size-heading"   # heading size
+    - "--font-size-label"     # question-label size
+  shape:
+    - "--button-radius"       # 0 = square, 8px = rounded, 999px = pill
+    - "--input-radius"        # 0 = underlined-feel; combine with transparent --input-bg
+    - "--layout-max-width"    # max width of the form column
+    - "--field-gap"           # vertical rhythm between screens
+    - "--bg-overlay-color"    # tint over --bg-image
+
+aliases:
+  background:        "--bg"
+  background_color:  "--bg"
+  bg_color:          "--bg"
+  foreground:        "--text"
+  foreground_color:  "--text"
+  danger:            "--error"
+  danger_color:      "--error"
+  font:              "--font-body"
+  font_family:       "--font-body"
+  body_font:         "--font-body"
+  heading_font:      "--font-heading"
+  radius:            "--radius-md"
+  border_radius:     "--radius-md"
+  shadow:            "--shadow-md"
+  # Auto-derived: <name>_color → --<name>, snake_case → kebab-case
+  # primary_color → --primary; neutral_500 → --neutral-500
+
+media_positions:
+  background:
+    layout: full-screen behind input + question
+    mobile: responsive (no collapse)
+    use_opacity: true
+    use_when: Atmospheric single mood image / video; pair opacity 0.3–0.55 so input stays legible.
+  left:
+    layout: 50/50 split, media left + input right
+    mobile: collapses to stacked at viewport width <= 768px (media on top)
+    use_opacity: false
+    use_when: Catalogue / showcase — product shot next to a "Which size?" question.
+  right:
+    layout: 50/50 split, input left + media right
+    mobile: collapses to stacked at viewport width <= 768px (media on top)
+    use_opacity: false
+    use_when: Same as left, mirrored. Good for forms read in right-to-left languages.
+  top:
+    layout: stacked, media above input
+    mobile: responsive (no collapse)
+    use_opacity: false
+    use_when: Header-style hero per question. Works on all viewport widths without collapse.
+
+sanitisation:
+  - Unknown token keys → silently dropped (forward-compat with renderer builds adding tokens).
+  - Token values longer than 256 chars → rejected.
+  - Token values matching url(, expression(, javascript:, </script → rejected.
+  - Preset-supplied linear-gradient(...) for --bg-image bypasses sanitisation (preset tokens TRUSTED). End-user --bg-image is restricted to none / linear-gradient / plain colours.
+  - Unknown preset slugs are forwarded; the renderer drops slugs it can't resolve.
+
+steps:
+  - id: apply_theme
+    description: Apply preset + token overrides at form-create or form-update time.
+    when: $inputs.flow_id is null
+    tool: form_create
+    payload:
+      name: "{{ form name }}"
+      fields: "{{ initial fields[] }}"
+      theme:
+        preset: $inputs.preset
+        tokens: $inputs.tokens
+    returns: { flow_id, kind, schema_version }
+
+  - id: retheme
+    description: Retheme an existing form. Validated client + server-side; invalid token shape returns 422 before hitting the backend.
+    when: $inputs.flow_id is not null
+    tool: form_update
+    payload:
+      flow_id: $inputs.flow_id
+      patch:
+        flow:
+          theme:
+            preset: $inputs.preset
+            tokens: $inputs.tokens
+    returns: { flow_id, version }
+
+  - id: attach_per_question_media
+    description: >
+      Loop over per_question_media[] and patch each field with its media.
+      Mobile collapse + opacity-only-for-background handled by the renderer.
+    when: $inputs.per_question_media is not null
+    tool: form_update_field
+    foreach: $inputs.per_question_media
+    payload:
+      flow_id: $apply_theme.flow_id or $inputs.flow_id
+      field_id: $item.field_id
+      patch:
+        media: $item.media
+
+  - id: preview
+    description: Get the public preview URL — /book/<flow_id> on the tenant's primary domain. No API call.
+    tool: form_preview_url
+    payload:
+      flow_id: $apply_theme.flow_id or $inputs.flow_id
+    returns: { public_url }
+
+outputs:
+  preview_url: $preview.public_url
+  flow_id:     $apply_theme.flow_id or $inputs.flow_id
+
+anti_patterns:
+  - Pasting multi-line CSS into a single token value — values cap at 256 chars and run through the unsafe-value regex.
+  - Relying on `opacity` for position=left|right|top — renderer ignores it. Dim the image at source.
+  - Shipping a video without poster_url — autoplay-blocked viewers see a black box.
+  - Overriding 10+ tokens of a preset — pick a different preset, then override 2–4 tokens.
+  - Using --bg-image with raw url() from user input — sanitisation rejects it. Use a gradient-based preset (form-on-image) or set the image via field.media position=background.

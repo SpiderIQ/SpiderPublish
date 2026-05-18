@@ -779,6 +779,9 @@ Tier 3 `impl.ts` files use only Node 18+ stdlib (`fetch`, `fs`, `path`) — zero
 - [Build a Programmatic Directory (Category / City / Listing)](.cursor/rules/directory.mdc) — Build /directory/{category}/{city}/{listing} pages programmatically: create category → bulk-upsert listings (or import from IDAP) → deploy.
 - [Audit Internal Links Before Deploy](.cursor/rules/link-audit.mdc) — Scan the tenant's published surface for broken internal links (404s, redirects, mistyped slugs) before deploy.
 - [Migrate a Tilda / Webflow / Lovable Site to SpiderPublish](.cursor/rules/tilda-migration.mdc) — End-to-end migration from a Tilda export (or Webflow / Lovable export): section → component → page → publish, with auto_extract_css for one-file imports.
+- [Build a Multi-Step Lead-Gen Form (end-to-end)](.cursor/rules/build-lead-gen-form.mdc) — Author a multi-step lead-capture Form with the form_* MCP surface: create with initial fields + theme → add follow-up fields + hidden UTM captures → client-side validate → 2-phase publish → fetch the copy-paste embed snippet for any third-party page.
+- [Design a Form — Presets, Token Overrides, Per-Question Media](.cursor/rules/design-a-form.mdc) — Give a Form a visual identity.
+- [Fill the CRM from a Form — IDAP Field Types + crm_target](.cursor/rules/idap-fill-from-form.mdc) — Make a Form populate the tenant CRM on submit.
 
 ### Core MCP-namespace skills
 

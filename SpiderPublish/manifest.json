@@ -188,6 +188,27 @@
       "title": "Install + Set Up the SpiderPublish IDE Extension",
       "summary": "Install + bind the SpiderPublish IDE extension (SpiderIQ.spideriq-publish) in VSCode, Cursor, Antigravity, Windsurf. Three artifacts: install.md (extension + auth + project binding), pull-and-edit.md (working tenant content as files + native diff + stage), push-and-deploy.md (5-phase push pipeline + Deploy Site + link audit). The extension wraps @spideriq/mcp-publish (87 tools) as a child process — same primitives, click-driven instead of typed.",
       "multi_artifact": true
+    },
+    {
+      "id": "build-lead-gen-form",
+      "kind": "recipe",
+      "ki_index": 22,
+      "title": "Build a Multi-Step Lead-Gen Form (end-to-end)",
+      "summary": "Author a multi-step lead-capture Form with the form_* MCP surface: create with initial fields + theme → add follow-up fields + hidden UTM captures → client-side validate → 2-phase publish → fetch the copy-paste embed snippet for any third-party page. Use whenever the user asks for 'a lead-gen form', 'a multi-step signup form', 'an embeddable form', 'a Typeform alternative', or 'a form on my SpiderPublish page'."
+    },
+    {
+      "id": "design-a-form",
+      "kind": "recipe",
+      "ki_index": 23,
+      "title": "Design a Form — Presets, Token Overrides, Per-Question Media",
+      "summary": "Give a Form a visual identity. Pick one of 6 bundled presets (card-light, fullscreen-dark, conversational-left, form-on-image, minimal-print, agency-bold), override design tokens (--primary, --button-radius, --font-heading, --layout-max-width, …), and attach per-question media (background image, side-image split, top hero, or autoplay video). Use whenever the user asks for 'theme my form', 'match the brand on this form', 'background image per question', 'split-image form', 'fullscreen form', 'Typeform look'."
+    },
+    {
+      "id": "idap-fill-from-form",
+      "kind": "recipe",
+      "ki_index": 24,
+      "title": "Fill the CRM from a Form — IDAP Field Types + crm_target",
+      "summary": "Make a Form populate the tenant CRM on submit. Wire each form field to a typed norm_cli_<tenant>.<resource_type>.<column> via crm_target, and use the 8 IDAP-anchored field types (url / country / region / postal_code / address / datetime / currency / place) so the value is structurally compatible with the column. Includes the field-type ↔ column compatibility matrix and the server-proxy behaviour of the place field (graceful fallback to free text when GOOGLE_PLACES_API_KEY is not provisioned). Use whenever the user asks for 'forms that fill the CRM', 'lead form with structured CRM fields', 'address picker on a form', 'Google Places form field', 'country picker', 'currency form field'."
     }
   ]
 }

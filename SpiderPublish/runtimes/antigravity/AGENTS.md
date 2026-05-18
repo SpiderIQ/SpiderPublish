@@ -2,7 +2,7 @@
 
 > **Built from canonical sources in [shared/](../../shared/).** Edit shared content there, run `npm run build` to regenerate.
 
-This kit ships **21 pre-built Knowledge Items** under [knowledge-items/](./knowledge-items/) covering capability discovery, page creation, marketplace search, deploy, personalized landing, booking, scroll-sequence, GEO readability, MCP package picking, CLI reference, and IDE extension setup. Install with `bash install-knowledge-items.sh`.
+This kit ships **24 pre-built Knowledge Items** under [knowledge-items/](./knowledge-items/) covering capability discovery, page creation, marketplace search, deploy, personalized landing, booking, scroll-sequence, GEO readability, MCP package picking, CLI reference, and IDE extension setup. Install with `bash install-knowledge-items.sh`.
 
 # SpiderPublish — AGENTS.md
 
@@ -779,6 +779,9 @@ Tier 3 `impl.ts` files use only Node 18+ stdlib (`fetch`, `fs`, `path`) — zero
 - [Build a Programmatic Directory (Category / City / Listing)](knowledge-items/08-spideriq-directory/) — Build /directory/{category}/{city}/{listing} pages programmatically: create category → bulk-upsert listings (or import from IDAP) → deploy.
 - [Audit Internal Links Before Deploy](knowledge-items/09-spideriq-link-audit/) — Scan the tenant's published surface for broken internal links (404s, redirects, mistyped slugs) before deploy.
 - [Migrate a Tilda / Webflow / Lovable Site to SpiderPublish](knowledge-items/10-spideriq-tilda-migration/) — End-to-end migration from a Tilda export (or Webflow / Lovable export): section → component → page → publish, with auto_extract_css for one-file imports.
+- [Build a Multi-Step Lead-Gen Form (end-to-end)](knowledge-items/22-spideriq-build-lead-gen-form/) — Author a multi-step lead-capture Form with the form_* MCP surface: create with initial fields + theme → add follow-up fields + hidden UTM captures → client-side validate → 2-phase publish → fetch the copy-paste embed snippet for any third-party page.
+- [Design a Form — Presets, Token Overrides, Per-Question Media](knowledge-items/23-spideriq-design-a-form/) — Give a Form a visual identity.
+- [Fill the CRM from a Form — IDAP Field Types + crm_target](knowledge-items/24-spideriq-idap-fill-from-form/) — Make a Form populate the tenant CRM on submit.
 
 ### Core MCP-namespace skills
 

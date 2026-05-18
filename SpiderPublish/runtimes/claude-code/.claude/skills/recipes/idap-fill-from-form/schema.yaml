@@ -1,0 +1,208 @@
+name: idap-fill-from-form
+tier: 2
+description: >
+  Make a Form populate the tenant's CRM on submit. Wire each form field to
+  a typed CRM column via `crm_target` and use the 8 IDAP-anchored field
+  types (url / country / region / postal_code / address / datetime /
+  currency / place) so the value the form ships is structurally
+  compatible with the column the CRM expects. The publish-time validator
+  rejects mismatches with 422 error_code="crm_target_invalid".
+
+inputs:
+  flow_id:
+    type: string
+    required: false
+    hint: Existing form_id to enhance. Omit to use this schema as a planning template before calling form_create.
+  fields_with_crm_targets:
+    type: array
+    required: true
+    hint: >
+      Array of FormField objects, each with crm_target +
+      (optionally) an IDAP-anchored type + per-type config.
+
+idap_field_types:
+  url:
+    output: validated https?:// URL string
+    per_type_config:
+      url_variant: '"generic" | "website" | "linkedin_url" | "domain"'
+    crm_columns: text-family
+    common_targets:
+      - businesses.website
+      - businesses.domain
+      - contacts.linkedin_url
+      - domains.website_url
+      - linkedin_profiles.linkedin_url
+  country:
+    output: ISO 3166-1 alpha-2 (e.g. "DE", "US", "AR")
+    per_type_config: {}
+    crm_columns: text-family (especially varchar(2) country_code columns)
+    common_targets:
+      - businesses.country_code
+      - phones.country_code
+      - linkedin_profiles.country_code
+      - company_registry.country_code
+  region:
+    output: text region / state / province (optionally ISO 3166-2 like "US-CA")
+    per_type_config: {}
+    crm_columns: text-family
+    common_targets:
+      - businesses.region
+      - company_registry.region
+      - contacts.city
+  postal_code:
+    output: normalised text, country-aware shape validation
+    per_type_config: {}
+    crm_columns: text-family
+    common_targets:
+      - businesses.postal_code
+      - company_registry.postal_code
+  address:
+    output: '{street_line_1, street_line_2?, city, region?, postal_code?, country}'
+    per_type_config:
+      address_required_components: 'array of street_line_1|street_line_2|city|region|postal_code|country; default = [street_line_1, city, country]'
+    crm_columns: text-family (flat string) OR jsonb (full struct)
+    common_targets:
+      - company_registry.address_line1
+      - <custom_field jsonb>
+  datetime:
+    output: ISO 8601 timestamp with timezone (or date when day-only)
+    per_type_config: {}
+    crm_columns: timestamp with time zone, date
+    common_targets:
+      - bookings.slot_start
+      - <custom_field timestamptz>
+  currency:
+    output: '{amount: number, currency: ISO4217} OR bare amount (amount_only mode)'
+    per_type_config:
+      currency_mode: '"amount_only" | "with_picker"'
+      default_currency: ISO 4217 three-letter code (e.g. "USD")
+      currencies: optional array of ISO 4217 codes restricting the picker
+    crm_columns: numeric (amount_only), jsonb (with_picker)
+    common_targets:
+      - <custom_field numeric>
+      - <custom_field jsonb>
+  place:
+    output: '{place_id, formatted_address, address_components, lat, lng}'
+    per_type_config:
+      place_types: 'array of Google Place type filters (e.g. ["restaurant"], ["establishment"], ["geocode"])'
+    crm_columns: text-family (place_id only) OR jsonb (full payload)
+    common_targets:
+      - businesses.google_place_id
+      - <custom_field jsonb>
+    server_proxy: |
+      Requires GOOGLE_PLACES_API_KEY provisioned on the deployment. When the
+      key is set the field renders as an autocomplete backed by
+      /api/v1/booking/{flow_id}/places/autocomplete. When the key is NOT
+      set the field gracefully degrades to a free-text input — the
+      crm_target writes the raw text and the renderer surfaces a one-line
+      "autocomplete unavailable" info hint.
+
+valid_resource_types:
+  - businesses
+  - contacts
+  - domains
+  - emails
+  - phones
+  - company_registry
+  - linkedin_profiles
+  # Booking-family — forms can write to these too:
+  - bookings
+  - services
+  - staff
+
+compatibility_matrix:
+  text:                "text-family (text, character varying, citext)"
+  email:               "text-family"
+  textarea:            "text-family"
+  number:              "smallint, integer, bigint, numeric, real, double precision"
+  date:                "date, timestamp with time zone"
+  time:                "time without time zone, timestamp with time zone"
+  phone:               "text-family"
+  tel:                 "text-family"
+  checkbox:            "boolean"
+  consent:             "boolean"
+  select:              "text-family + jsonb"
+  picture_choice:      "text-family + jsonb"
+  rating:              "smallint, numeric"
+  nps:                 "smallint, numeric"
+  opinion_scale:       "smallint, numeric"
+  file_upload:         "text-family"
+  statement:           "(unmappable; no value)"
+  url:                 "text-family"
+  country:             "text-family"
+  region:              "text-family"
+  postal_code:         "text-family"
+  address:             "text-family + jsonb"
+  datetime:            "timestamp with time zone, date"
+  currency:            "numeric, jsonb"
+  place:               "text-family + jsonb"
+
+steps:
+  - id: enumerate_columns
+    description: >
+      Look at the per-tenant norm_cli_*.<resource_type> tables to find
+      the columns you want to populate. Use the dashboard or psql via
+      docs-internal channels; the CRM column list is per-tenant.
+    manual: true
+
+  - id: pick_field_types
+    description: >
+      For each (resource_type, column) pair, pick the IDAP-anchored field
+      type whose output shape matches the column's data_type. Reference
+      the compatibility_matrix above.
+    manual: true
+
+  - id: assemble_fields
+    description: >
+      Build the fields[] array with crm_target + per-type config on each.
+      Pair currency_mode=amount_only with numeric columns; with_picker
+      with jsonb columns.
+    manual: true
+
+  - id: create_or_update
+    description: >
+      Send the fields[] via form_create (new form) or form_add_field /
+      form_update_field (existing form). Publish-time validator catches
+      crm_target mismatches before the form goes live.
+    tool: form_create
+    payload:
+      name: "{{ form name }}"
+      fields: $inputs.fields_with_crm_targets
+
+  - id: publish
+    description: 2-phase publish — backend validates every crm_target against the per-tenant column's data_type.
+    tool: form_publish
+    payload:
+      flow_id:        $create_or_update.flow_id
+      title:          "{{ form name }}"
+      length_minutes: 1
+      team_id:        0
+    returns: { dry_run, confirm_token }
+
+  - id: publish_confirm
+    description: Flow → status=active. Submissions now dual-write into norm_cli_<tenant>.<resource_type>.
+    tool: form_publish
+    payload:
+      flow_id:        $create_or_update.flow_id
+      title:          "{{ form name }}"
+      length_minutes: 1
+      team_id:        0
+      confirm_token:  $publish.confirm_token
+
+outputs:
+  flow_id: $create_or_update.flow_id
+  status:  $publish_confirm.status
+
+submit_path: |
+  POST /api/v1/booking/{flow_id}/submit lands the raw answers in
+  public.results (worker_type='form'); the CRM sync cron picks the row
+  up within 60s and UPSERTs each crm_target mapping into
+  norm_cli_<tenant>.<resource_type> using the natural key of that table
+  (e.g. contacts.email, businesses.google_place_id).
+
+anti_patterns:
+  - Using type=text for a structured column (e.g. "United States" landing in country_code varchar(2)). Use type=country.
+  - Wiring crm_target to a column that doesn't exist on the tenant's norm_cli_* schema (publish returns 422).
+  - Storing a place payload's formatted_address into businesses.address — wire the typed place_id (or full jsonb) so downstream personalization re-uses it.
+  - Currency mode/column mismatch — amount_only against jsonb, or with_picker against numeric. Pair amount_only with numeric and with_picker with jsonb.
+  - Assuming place autocomplete is always available — if GOOGLE_PLACES_API_KEY is not provisioned, the field falls back to free text.
