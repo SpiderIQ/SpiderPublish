@@ -1460,6 +1460,9 @@ Tier 3 `impl.ts` files use only Node 18+ stdlib (`fetch`, `fs`, `path`) — zero
 - [Build a Programmatic Directory (Category / City / Listing)](.claude/skills/recipes/directory/SKILL.md) — Build /directory/{category}/{city}/{listing} pages programmatically: create category → bulk-upsert listings (or import from IDAP) → deploy.
 - [Audit Internal Links Before Deploy](.claude/skills/recipes/link-audit/SKILL.md) — Scan the tenant's published surface for broken internal links (404s, redirects, mistyped slugs) before deploy.
 - [Migrate a Tilda / Webflow / Lovable Site to SpiderPublish](.claude/skills/recipes/tilda-migration/SKILL.md) — End-to-end migration from a Tilda export (or Webflow / Lovable export): section → component → page → publish, with auto_extract_css for one-file imports.
+- [Build a Multi-Step Lead-Gen Form (end-to-end)](.claude/skills/recipes/build-lead-gen-form/SKILL.md) — Author a multi-step lead-capture Form with the form_* MCP surface: create with initial fields + theme → add follow-up fields + hidden UTM captures → client-side validate → 2-phase publish → fetch the copy-paste embed snippet for any third-party page.
+- [Design a Form — Presets, Token Overrides, Per-Question Media](.claude/skills/recipes/design-a-form/SKILL.md) — Give a Form a visual identity.
+- [Fill the CRM from a Form — IDAP Field Types + crm_target](.claude/skills/recipes/idap-fill-from-form/SKILL.md) — Make a Form populate the tenant CRM on submit.
 
 ### Core MCP-namespace skills
 

@@ -1,0 +1,186 @@
+name: build-lead-gen-form
+tier: 2
+description: >
+  Ship a multi-step lead-gen form end-to-end: create with initial fields +
+  theme → optionally add follow-up fields + hidden URL-param captures →
+  client-side validate → 2-phase publish → fetch the copy-paste embed
+  snippet for any third-party page. Uses the form_* MCP tool surface from
+  @spideriq/mcp@1.13.0+ (kitchen-sink package; NOT in mcp-publish).
+
+inputs:
+  name:
+    type: string
+    required: true
+    hint: Form display name shown on the dashboard list (e.g. "Free trial signup").
+  email_label:
+    type: string
+    required: false
+    default: Your work email
+  company_label:
+    type: string
+    required: false
+    default: Company name
+  team_size_label:
+    type: string
+    required: false
+    default: Team size
+  preset:
+    type: string
+    required: false
+    default: card-light
+    hint: >
+      One of the six bundled preset slugs: card-light | fullscreen-dark |
+      conversational-left | form-on-image | minimal-print | agency-bold.
+      See recipes/design-a-form for what each one looks like.
+  primary_color:
+    type: string
+    required: false
+    default: "#1f6feb"
+    hint: Hex colour for the --primary token. Drives buttons + progress fill.
+  button_radius:
+    type: string
+    required: false
+    default: 8px
+    hint: "CSS length for --button-radius. 0 = square, 8px = rounded, 999px = pill."
+  publish_title:
+    type: string
+    required: false
+    default: $inputs.name
+    hint: >
+      Cal.com event title (form_publish currently requires this; backend
+      makes it kind-aware in P1.M1). For form-kind, any non-empty string.
+
+steps:
+  - id: create
+    description: Create the form in draft status with three initial fields + theme.
+    tool: form_create
+    payload:
+      name: $inputs.name
+      fields:
+        - id: work_email
+          type: email
+          label: $inputs.email_label
+          required: true
+          placeholder: "you@company.com"
+        - id: company_name
+          type: text
+          label: $inputs.company_label
+          required: true
+        - id: team_size
+          type: select
+          label: $inputs.team_size_label
+          required: true
+          options:
+            - { label: "Just me",  value: "solo"   }
+            - { label: "2 – 10",   value: "small"  }
+            - { label: "11 – 50",  value: "medium" }
+            - { label: "51+",      value: "large"  }
+      theme:
+        preset: $inputs.preset
+        tokens:
+          "--primary":       $inputs.primary_color
+          "--button-radius": $inputs.button_radius
+    returns: { flow_id, kind, schema_version }
+    notes: |
+      Do NOT pass business_id — backend resolves a per-tenant sentinel
+      business automatically for kind="form". Passing it returns 422.
+
+  - id: add_contact_method
+    description: Append a contact-method picker.
+    tool: form_add_field
+    payload:
+      flow_id: $create.flow_id
+      field:
+        id: contact_method
+        type: select
+        label: "How should we reach you?"
+        required: true
+        options:
+          - { label: "Email",        value: "email"  }
+          - { label: "Phone",        value: "phone"  }
+          - { label: "Either works", value: "either" }
+
+  - id: add_notes
+    description: Append an optional free-text follow-up.
+    tool: form_add_field
+    payload:
+      flow_id: $create.flow_id
+      field:
+        id: anything_else
+        type: textarea
+        label: "Anything we should know about your use case?"
+        required: false
+        placeholder: "Optional — but it helps us prep your trial"
+
+  - id: add_utm_source
+    description: Capture utm_source from the embed page's URL onto the lead row.
+    tool: form_add_hidden_field
+    payload:
+      flow_id: $create.flow_id
+      hidden_field: { key: utm_source,   label: "UTM source"   }
+
+  - id: add_utm_campaign
+    description: Capture utm_campaign from the embed page's URL onto the lead row.
+    tool: form_add_hidden_field
+    payload:
+      flow_id: $create.flow_id
+      hidden_field: { key: utm_campaign, label: "UTM campaign" }
+
+  - id: validate
+    description: >
+      Client-side structural validation (14 rule classes — no API call).
+      Catches malformed conditions, dangling field-id references, action
+      shape mismatches.
+    tool: form_validate
+    payload:
+      flow: $create.flow
+    returns: { errors, warnings }
+
+  - id: publish_dry_run
+    description: Publish — 2-phase confirm, this call returns the confirm_token.
+    tool: form_publish
+    payload:
+      flow_id:        $create.flow_id
+      title:          $inputs.publish_title
+      length_minutes: 1
+      team_id:        0
+    returns: { dry_run, confirm_token, expires_at }
+    notes: |
+      length_minutes=1 / team_id=0 are placeholders for the shared cal.com
+      endpoint and ignored for form-kind. Backend goes kind-aware in P1.M1.
+
+  - id: publish_confirm
+    description: Confirm the publish — flow goes draft → active.
+    tool: form_publish
+    payload:
+      flow_id:        $create.flow_id
+      title:          $inputs.publish_title
+      length_minutes: 1
+      team_id:        0
+      confirm_token:  $publish_dry_run.confirm_token
+    returns: { status, flow_id }
+
+  - id: embed_snippet_popup
+    description: >
+      Build the copy-paste popup-mode HTML snippet. Local-only — no API
+      call. Returns the script tag pointing at the loader + the button
+      with data-spiderflow-* attributes.
+    tool: form_get_embed_snippet
+    payload:
+      flow_id:     $create.flow_id
+      mode:        popup
+      button_text: "Start Free Trial"
+    returns: { snippet, loader_url }
+
+outputs:
+  flow_id:             $create.flow_id
+  status:              $publish_confirm.status
+  embed_snippet_popup: $embed_snippet_popup.snippet
+  loader_url:          $embed_snippet_popup.loader_url
+  preview_url:         "/book/{$create.flow_id}"
+
+anti_patterns:
+  - Passing business_id on a kind="form" form_create call (backend 422s).
+  - Skipping form_validate after many sequential add_field / add_choice mutations.
+  - Pasting the embed snippet without `async` on the loader script tag.
+  - Authoring the form to draft and forgetting publish_confirm (the /book/<flow_id> route 404s until status="active").
