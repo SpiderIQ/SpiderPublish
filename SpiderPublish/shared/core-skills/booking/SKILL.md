@@ -4,12 +4,12 @@ SpiderBook — end-to-end appointment / service-slot booking for tenant sites. B
 
 **Exposed via:** `@spideriq/mcp@1.0.0` (kitchen-sink, 257 tools) — 15 booking tools. If you're running the slim `@spideriq/mcp-publish` (105 tools), add a second MCP server entry for the booking slice when it lands as a standalone package.
 
-> **Listing flows by kind:** as of `@spideriq/mcp-tools@1.12.0` (SpiderFlow Wave 2, 2026-05-11), `booking_flow_list` accepts an optional `?kind=` filter (`booking` / `form` / `funnel` / `commerce`). Use `kind=form` to enumerate SpiderFlow forms instead of bookings — see the [forms](../forms/) core-skill for the full form-authoring surface.
+> **Listing flows by kind:** as of `@spideriq/mcp-tools@1.12.0+` (Forms Wave 2, 2026-05-11), `booking_flow_list` accepts an optional `?kind=` filter (`booking` / `form` / `funnel` / `commerce`). Use `kind=form` to enumerate Forms instead of bookings — see the [forms](../forms/) core-skill for the full form-authoring surface.
 
 ## What you ship with this
 
 - A customer-facing widget (`apps/booking-component`) that collects step-by-step answers — service pick, slot pick, contact form, confirm
-- A standalone route at `/book/{flow_id}` on the tenant's primary domain
+- A standalone route at `/book/{flow_id}` on the tenant's primary domain (kind='booking' flows — distinct from Forms' kind-aware `/f/{flow_id}` route)
 - A `{% booking flow_id: biz.booking_flow_id %}` Liquid tag for embedding inside any page template
 - A dashboard editor under `/dashboard/booking/*` for authoring flows, services, and translations
 - Automatic cal.com event-type provisioning on publish

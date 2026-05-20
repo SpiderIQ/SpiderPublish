@@ -12,11 +12,12 @@ You are about to set up the SpiderPublish Starter Kit in this project. Identify 
 npx degit martinshein/SpideriQ-ai/SpiderPublish/runtimes/claude-code .
 ```
 
-Then read `CLAUDE.md` from the project root. Skills auto-load from `.claude/skills/` based on user intent. The bundled `.mcp.json` configures `@spideriq/mcp-publish` (87 tools, atomic publish slice). Continue with:
+Then read `CLAUDE.md` from the project root. Skills auto-load from `.claude/skills/` based on user intent. The bundled `.mcp.json` configures `@spideriq/mcp-publish@^1.17.2` (atomic publish + forms + extension slice). Continue with:
 
-1. `npx @spideriq/cli auth request --email <admin-email>` — request a PAT (admin must approve)
-2. `npx @spideriq/cli use --list` then `npx @spideriq/cli use <project>` — bind this directory (writes `./spideriq.json`, **commit it**)
-3. Restart Claude Code so it picks up the new `.mcp.json`
+1. **Phase 0 — verify your MCP bundle**: open `CLAUDE.md`, scroll to "Phase 0 — Verify your MCP bundle BEFORE acting", run the ≤30s check. **Do not proceed until it passes.**
+2. `npx @spideriq/cli auth request --email <admin-email>` — request a PAT (admin must approve)
+3. `npx @spideriq/cli use --list` then `npx @spideriq/cli use <project>` — bind this directory (writes `./spideriq.json`, **commit it**)
+4. Restart Claude Code so it picks up the new `.mcp.json`
 
 ## If you are Google Antigravity
 
@@ -48,7 +49,7 @@ Claude Desktop has no auto-bootstrap (no MCP discovery from a folder, no skill l
 npx degit martinshein/SpideriQ-ai/SpiderPublish/runtimes/claude-desktop ./.spideriq-ref
 ```
 
-Then read `./.spideriq-ref/README.md` — it walks you through editing `claude_desktop_config.json`, registering `@spideriq/mcp-publish`, and the manual prompt-pasting workflow (no skill auto-loading on Claude Desktop).
+Then read `./.spideriq-ref/README.md` — it walks you through editing `claude_desktop_config.json`, registering `@spideriq/mcp-publish@^1.17.2`, and the manual prompt-pasting workflow (no skill auto-loading on Claude Desktop). Run the Phase 0 MCP bundle check from `./.spideriq-ref/AGENTS.md` before authoring.
 
 ## If you are Windsurf, VS Code with Claude Code extension, or any other MCP-compatible IDE
 

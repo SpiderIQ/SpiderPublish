@@ -300,7 +300,7 @@ form_update({
 
 # 4. Preview
 form_preview_url({ flow_id: "<flow_id>" })
-# → /book/<flow_id>
+# → /f/<flow_id>     (legacy /book/<flow_id> still 301-redirects here)
 ```
 
 ## Anti-patterns

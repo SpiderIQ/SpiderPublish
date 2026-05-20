@@ -20,7 +20,7 @@ Same engine; same MCP server; same auth; four front doors. Pick by ergonomic fit
 | Surface | Best for | What you get | How to install |
 |---|---|---|---|
 | **IDE extension** (`SpiderIQ.spideriq-publish`) | Authoring multi-section pages where you want to *see* what changes before pushing | Pages/posts/components/templates as files on disk · native VSCode diff editor · git-style stage view · pre-push link audit · one-keystroke deploy · bundles `@spideriq/mcp-publish` so AI agents in the same IDE share the surface | [Open VSX](https://open-vsx.org/extension/SpiderIQ/spideriq-publish) (Cursor / Antigravity / Windsurf) or [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=SpiderIQ.spideriq-publish) (VS Code 1.85+) |
-| **MCP server** (`@spideriq/mcp-publish`) | LLM agents in chat (Claude Code, Cursor chat, Antigravity chat, Claude Desktop) | 87 tools registered as Language Model Tools · `dry_run`-defaulted destructive ops · YAML response format opt-in · same auth as the CLI | `.mcp.json` config (see [Quick Start](#quick-start-2-minutes)) |
+| **MCP server** (`@spideriq/mcp-publish`) | LLM agents in chat (Claude Code, Cursor chat, Antigravity chat, Claude Desktop) | 100+ tools registered as Language Model Tools · opt-in `dry_run=true` preview-first flow on destructive ops · YAML response format opt-in · `?format=llm` guidance envelopes (Wave 3) · structured error envelopes · `content_visual_check` Playwright sidecar | `.mcp.json` config (see [Quick Start](#quick-start-2-minutes)) |
 | **CLI** (`@spideriq/cli`) | Scripts, CI, terminal-first workflows, agency loops over many tenants | Same primitives as MCP/extension, plus `auth request --email`, `use --list`, batch ops · machine-readable `--format yaml\|json\|md` | `npx @spideriq/cli --help` (one-shot) or `npm i -g @spideriq/cli --registry=https://npm.spideriq.ai` |
 | **HTTP API** | Bespoke integrations, CRMs, server-side automation, anything outside an LLM/IDE | Raw REST under `/api/v1/dashboard/projects/{project_id}/...` · same Phase 11+12 dry_run/confirm_token gating · OpenAPI spec at `/api/v1/docs` | Bearer token + `curl` — see [examples/build-and-deploy.sh](./examples/build-and-deploy.sh) |
 
@@ -68,7 +68,7 @@ In order, shortest to deepest:
 8. [skills/recipes/](./skills/recipes/) — 10 multi-step workflows (marketplace-search, scroll-sequence, tilda-migration, link-audit, directory, …)
 9. [LEARNINGS.md](./LEARNINGS.md) — gotchas + anti-patterns
 
-**Current versions:** `@spideriq/cli@1.7.0`, `@spideriq/mcp-publish@1.7.0` (87 tools — the atomic content + extension slice), `@spideriq/core@1.6.0`, `SpiderIQ.spideriq-publish@0.1.1` (IDE extension on Open VSX + VSCode Marketplace). Prefer `mcp-publish` over the kitchen-sink `@spideriq/mcp@1.7.0` (126 tools) — under the ~128-tool injection limit some IDE/LLM stacks enforce, and less context burn per turn.
+**Current versions (Agent Trust Hardening close, 2026-05-20):** `@spideriq/cli@^1.16.1`, `@spideriq/mcp-publish@^1.17.2` (the atomic content + extension + forms slice), `@spideriq/core@^1.17.1`, `@spideriq/mcp@^1.20.1` (kitchen-sink — bundles publish + booking + forms + mail + leads + gate + admin), `SpiderIQ.spideriq-publish@0.4.0+` (IDE extension on Open VSX + VSCode Marketplace — now includes the `content_visual_check` Playwright-sidecar panel). Prefer `mcp-publish` over the kitchen-sink `@spideriq/mcp` — under the ~128-tool injection limit some IDE/LLM stacks enforce, and less context burn per turn.
 
 Continue reading for full architecture, tool catalog, and recipes →
 

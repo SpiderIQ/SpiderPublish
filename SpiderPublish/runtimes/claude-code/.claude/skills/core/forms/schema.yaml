@@ -1,24 +1,24 @@
-# SpiderFlow Forms Skill — API Surface Definition
+# Forms Skill — API Surface Definition
 #
-# Public reference for the @spideriq/mcp@1.13.0+ form_* tool surface.
+# Public reference for the @spideriq/mcp@^1.20.1+ form_* tool surface.
 # Use this file as the source of truth when generating typed clients
 # or reasoning about parameter shapes.
 #
-# v1.0.0 (SpiderFlow Wave 2, P1.6 + P1.7 + P1.8, 2026-05-11):
+# v1.0.0 (Forms Wave 2, P1.6 + P1.7 + P1.8, 2026-05-11):
 #   Initial release — 21 methods covering form authoring end-to-end.
-#   Mirrors the @spideriq/mcp@1.13.0 form_* tool surface (20 tools)
+#   Mirrors the @spideriq/mcp@^1.20.1 form_* tool surface
 #   plus the booking_flow_list ?kind= filter.
 
 name: spideriq-forms
 version: "1.0.0"
 description: >
-  Build and manage SpiderFlow forms — multi-step wizards, lead capture,
+  Build and manage Forms — multi-step wizards, lead capture,
   NPS / CSAT surveys. Discriminator-based on the booking_flows table
   (kind='form'). 15+ field types, conditional logic with variables +
   hidden fields, structural validation, embed snippet generation.
-  Customers fill via the SpiderFlow embed loader
+  Customers fill via the Forms embed loader
   (embed.spideriq.ai/v1/loader.js, inline or popup) or the standalone
-  /book/<flow_id> route.
+  /f/<flow_id> route. (Legacy /book/<flow_id> 301-redirects to /f/<flow_id>.)
 category: customer-forms
 base_url: /api/v1
 auth:
@@ -420,8 +420,10 @@ methods:
 
   preview_url:
     description: >
-      Return the deterministic public preview URL for a form — /book/{flow_id}.
-      No API call; just composes the URL.
+      Return the deterministic public preview URL for a form — /f/{flow_id}.
+      (Kind-aware route served by the renderer. Legacy /book/{flow_id} URLs
+      301-redirect to /f/{flow_id} for back-compat.) No API call; just
+      composes the URL.
     http: client-side
     params:
       flow_id:

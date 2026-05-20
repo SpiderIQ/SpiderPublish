@@ -2,7 +2,7 @@
   "title": "Search the SpiderIQ Component Marketplace",
   "summary": "Search the curated SpiderIQ component marketplace by kind / mood / palette / brand_fit_tags / scene_type, then insert a result into a page. Use whenever the user asks for 'a hero section', 'a CTA block', 'a pricing component', or any 'find me a section / block / component for ...' request.",
   "createdAt": "2026-05-08T00:00:00Z",
-  "updatedAt": "2026-05-18T07:10:33Z",
+  "updatedAt": "2026-05-20T10:02:13Z",
   "references": [
     "shared/recipes/marketplace-search-and-insert/"
   ]

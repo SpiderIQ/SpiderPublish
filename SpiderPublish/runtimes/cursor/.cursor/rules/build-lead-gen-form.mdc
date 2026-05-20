@@ -10,7 +10,7 @@ Ship a multi-step lead-gen Form end-to-end — author the fields, give it a them
 
 - A tenant needs a multi-step lead-capture form (email + company + team size, plus a contact-method picker).
 - You're replacing a Typeform / Tally form and want one MCP-driven pipeline that lives next to the rest of the site.
-- The form needs to ship on the tenant's own domain at `/book/<flow_id>` AND embed on an external site (Webflow, Shopify, plain HTML).
+- The form needs to ship on the tenant's own domain at `/f/<flow_id>` (legacy `/book/<flow_id>` 301-redirects here) AND embed on an external site (Webflow, Shopify, plain HTML).
 - You want the form themed (preset + token overrides) at create time so the first publish already matches the brand.
 
 If you only need a single email field at the bottom of a page → use a `form` block on a page instead. Forms are for multi-step / conditional flows.
@@ -217,7 +217,7 @@ Hidden-field keys are matched against the URL's query string at form load (`?utm
 - **Don't pass `business_id` on a form-kind `form_create` call** — backend `422`s. The sentinel-business is auto-resolved.
 - **Don't skip `form_validate` if you've been mutating the form across many tool calls** — it's a free client-side check that catches "added a `picture_choice` field without `image_url` on its options".
 - **Don't paste the embed snippet without `async`** on the script tag — the loader is design-only on first render; the form iframe takes over once it loads.
-- **Don't author the form on a draft and then forget the publish step** — `/book/<flow_id>` will 404 until status flips to `active`.
+- **Don't author the form on a draft and then forget the publish step** — `/f/<flow_id>` will 404 until status flips to `active`.
 
 ## See also
 

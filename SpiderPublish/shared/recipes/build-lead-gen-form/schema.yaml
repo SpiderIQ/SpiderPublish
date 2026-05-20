@@ -177,10 +177,10 @@ outputs:
   status:              $publish_confirm.status
   embed_snippet_popup: $embed_snippet_popup.snippet
   loader_url:          $embed_snippet_popup.loader_url
-  preview_url:         "/book/{$create.flow_id}"
+  preview_url:         "/f/{$create.flow_id}"
 
 anti_patterns:
   - Passing business_id on a kind="form" form_create call (backend 422s).
   - Skipping form_validate after many sequential add_field / add_choice mutations.
   - Pasting the embed snippet without `async` on the loader script tag.
-  - Authoring the form to draft and forgetting publish_confirm (the /book/<flow_id> route 404s until status="active").
+  - Authoring the form to draft and forgetting publish_confirm (the /f/<flow_id> route 404s until status="active").

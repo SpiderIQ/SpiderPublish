@@ -2,15 +2,15 @@
 
 Things that cause silent failures or broken deploys. Read before building.
 
-## May 2026 — `form_*` tools missing in your IDE? Check your MCP package (SpiderFlow Wave 2, 2026-05-11)
+## May 2026 — `form_*` tools missing in your IDE? Check your MCP package (Forms Wave 2, 2026-05-11)
 
-**The trap:** your agent reports `Unknown tool: form_create` (or any other `form_*` name) even though the kit's docs list 20 form tools. The form tools live in **`@spideriq/mcp@1.13.0`** (the kitchen-sink MCP package, 144 tools). The starter kit's default `.mcp.json` ships pointed at **`@spideriq/mcp-publish@1.12.1`** (the atomic publish package, 124 tools — none of which are `form_*`).
+**The trap:** your agent reports `Unknown tool: form_create` (or any other `form_*` name) even though the kit's docs list 20+ form tools. The form tools live in **`@spideriq/mcp@^1.20.1`** (the kitchen-sink MCP package). The starter kit's default `.mcp.json` ships pointed at **`@spideriq/mcp-publish@^1.17.2`** (the atomic publish package — none of which are `form_*`).
 
 The split is deliberate. Antigravity, Claude Desktop, and Codex-on-Responses silently drop MCP servers that report more than 128 tools. `mcp-publish` stays under the ceiling so it loads cleanly across every IDE; the kitchen-sink `mcp` package opts into the higher tool count.
 
 **Fix — pick one:**
 
-1. **Switch the existing entry:** edit `.mcp.json` and replace `@spideriq/mcp-publish` with `@spideriq/mcp@1.13.0`. You get every tool (publish + booking + forms + mail + leads + gate + admin) at the cost of the higher tool count. Recommended for agents primarily authoring forms.
+1. **Switch the existing entry:** edit `.mcp.json` and replace `@spideriq/mcp-publish` with `@spideriq/mcp@^1.20.1`. You get every tool (publish + booking + forms + mail + leads + gate + admin) at the cost of the higher tool count. Recommended for agents primarily authoring forms.
 2. **Add a second MCP server:** keep `mcp-publish` as the default, add `mcp` as a second entry (call it `spideriq-forms` or similar) and only enable it when you're authoring forms. Recommended for agents that mostly do pages/posts/components and only occasionally touch forms.
 3. **Wait:** an atomic forms-only `@spideriq/mcp-forms` package is on the P1.6 follow-up roadmap — it will let you pull just the forms surface without the kitchen-sink overhead.
 

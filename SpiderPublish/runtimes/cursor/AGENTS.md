@@ -15,7 +15,83 @@ Cursor reads this file plus per-skill rules under `.cursor/rules/*.mdc`. Each ru
 > Tiers Reference: [docs.spideriq.ai/site-builder/component-tiers](https://docs.spideriq.ai/site-builder/component-tiers)
 > Agent Reference: [docs.spideriq.ai/site-builder/component-agents-reference](https://docs.spideriq.ai/site-builder/component-agents-reference)
 
-**Current package versions (1.7.0, 2026-05-06):** `@spideriq/cli@1.7.0`, `@spideriq/mcp-publish@1.7.0`, `@spideriq/core@1.6.0`. **New in 1.7.0:** `marketplace_suggest_agent_meta` — wraps the SpiderGate-powered inference engine so external LLM agents can suggest mood / palette / brand_fit_tags / scene_type / agent_meta for marketplace assets they upload (two-step: suggest → review → apply via the existing `set_*_agent_meta` tools). The atomic publish slice now exposes **7 Marketplace V2 tools** total (search, list_data_sources, set_component_kind, set_component_agent_meta, set_bg_video_agent_meta, set_site_template_agent_meta, marketplace_suggest_agent_meta) — see the "Marketplace V2" section below. The kitchen-sink `@spideriq/mcp@1.7.0` totals 126 tools and bundles SpiderBook booking + mail / leads / gate / admin slices. The starter kit's `.mcp.json` defaults to `@spideriq/mcp-publish` — under the ~128-tool injection limit enforced by some IDE/LLM stacks, and less context burn per message.
+**Current package versions (post-Agent-Trust-Hardening close, 2026-05-20):** `@spideriq/cli@^1.16.1`, `@spideriq/mcp-publish@^1.17.2`, `@spideriq/mcp@^1.20.1`, `@spideriq/core@^1.17.1`. **Agent Trust Hardening** (closed 2026-05-20) added per-endpoint `guidance:` envelopes on `?format=llm`, structured error envelopes on every 4xx/5xx, opt-in `?dry_run=true` preview-first flows on the 10 destructive content endpoints, and a Playwright sidecar (`content_visual_check`) for empirical proof that a published page actually renders. The kitchen-sink `@spideriq/mcp@^1.20.1` bundles publish + booking + forms + mail + leads + gate + admin. The starter kit's `.mcp.json` defaults to `@spideriq/mcp-publish` — under the ~128-tool injection limit enforced by some IDE/LLM stacks, and less context burn per message.
+
+## Phase 0 — Verify your MCP bundle BEFORE acting
+
+A stale MCP bundle is the #1 cause of confidently-wrong work. Before ANY authoring/editing action, confirm your bundle is current. If you skip this, you may be building against assumptions that no longer match reality (this is the W13 incident class — an agent built 8 broken iframes because its MCP bundle returned an outdated URL).
+
+**Quick check (≤ 30s):**
+
+1. Ask your IDE for the current MCP tool list. Confirm these tools are present:
+   - `form_preview_url`
+   - `form_create` (or `form_upsert`)
+   - `form_publish`
+   - `form_get_embed_snippet`
+   - `content_create_page`
+   - `content_visual_check`
+   - `content_deploy_site`
+
+2. Call `form_preview_url({ flow_id: "<any existing flow_id>" })`. Confirm `response.public_url` contains `/f/<id>` — NOT `/book/<id>`.
+
+3. Call any read endpoint with `?format=llm` and confirm a `guidance` block returns:
+   ```
+   GET https://spideriq.ai/api/v1/auth/workspaces?format=llm
+   ```
+   The response must carry `guidance: { use, not, next, warn, pitfalls, limits }`. If `guidance` is absent, your bundle (or the api-gateway pin you're hitting) is stale — STOP and update.
+
+**If anything fails:**
+- **Antigravity:** edit `~/.gemini/antigravity/settings.json`, bump `@spideriq/mcp-publish` to `^1.17.2` (or `@spideriq/mcp` to `^1.20.1`). Restart Antigravity. Re-run Phase 0.
+- **Claude Code:** edit `.mcp.json` in the workspace, pin to current. Restart.
+- **Cursor:** same as Claude Code.
+- **VSCode extension:** update from Open VSX to `SpiderIQ.spideriq-publish@0.4.0`+.
+
+**DO NOT proceed to Phase 1 until Phase 0 passes.**
+
+## How to learn our tools without reading the source
+
+Four channels expose tool intent + parameter shape + chain order — read them BEFORE you guess.
+
+1. **MCP `tools/list`** — every tool exposes a description that includes `use:`, `warn:`, and `next:` hints lifted from the OPVS guidance block. Read them. Don't invoke a `form_*` tool without first noting its `warn:` line.
+   ```
+   # Example: ask your IDE to list MCP tools, scan the description field.
+   # The mcp-publish bundle's form_publish description includes:
+   #   "warn: kind='form' callers should pass length_minutes=1, title='Form', team_id=0 — these are Cal.com-required but ignored for forms."
+   ```
+
+2. **`?format=llm` on any read endpoint** — adds a `guidance:` block with `use / not / next / warn / pitfalls / limits` (OPVS vocab — see Wave 3 contracts below). Single GET, no auth wrinkle, machine-readable.
+   ```
+   curl "https://spideriq.ai/api/v1/dashboard/projects/$PID/content/pages/$PAGE_ID?format=llm" \
+     -H "Authorization: Bearer $CLIENT_ID:$API_KEY:$API_SECRET"
+   # → { ...page, guidance: { use: "...", not: ["..."], next: ["..."], warn: "...", pitfalls: ["..."], limits: {...} } }
+   ```
+
+3. **Structured error envelopes** — every 4xx/5xx response carries `{error: {code, message, what_you_sent, what_was_expected, suggested_action, suggested_url, docs}}`. Read `what_was_expected` when shape is wrong. Don't pattern-match on the message string — the `code` is stable, the message isn't.
+   ```
+   # Bad request returns:
+   # { "error": { "code": "fields_invalid", "message": "...", "what_you_sent": {...}, "what_was_expected": {"fields[0].type": "one of: short_text|email|..."}, "suggested_action": "Re-issue with a valid type", "docs": "https://docs.spideriq.ai/forms/fields" } }
+   ```
+
+4. **`content_visual_check` for empirical proof** — Playwright sidecar screenshots + DOM probe. Use after every `content_publish_page` / `content_deploy_site` to confirm the deploy actually rendered. **Assert on `dom.shadow_hosts.includes("spideriq-form")`** for embedded forms — the iframe `body_text_preview` is OPAQUE to the parent page (cross-origin), so it's never the right assertion target.
+   ```
+   content_visual_check({
+     page_url: "https://acme.com/signup",
+     viewport: "desktop",   # "desktop" | "mobile" — NOT a {width,height} object
+     timeout_ms: 30000
+   })
+   # → { success, screenshot_url, dom: { iframe_count, iframe_srcs[], shadow_hosts[] }, console_errors[], failed_requests[] }
+   # Assert: response.dom.shadow_hosts.includes("spideriq-form")
+   ```
+
+## Three surfaces: CLI vs MCP vs Extension
+
+| Surface | What | When to use |
+|---|---|---|
+| **CLI** (`npx @spideriq/cli`) | Terminal commands wrapping the same API | Scripting, CI, batch ops, one-off scripted flows, environments where you can't run an MCP server (servers, GitHub Actions, ad-hoc shells) |
+| **MCP** (`@spideriq/mcp` / `@spideriq/mcp-publish` bundles) | Structured tool calls invoked by an IDE agent | Authoring with an IDE agent (Claude Code / Cursor / Antigravity / Claude Desktop). **Default for design work.** The agent reads tool descriptions, chains calls, handles `dry_run`/`confirm_token` semantics natively. |
+| **Extension** (`SpiderIQ.spideriq-publish` 0.4.0+ in VSCode / Cursor / Antigravity) | In-IDE buttons + native diff + visual-check panel | Pull/push file-based workflow (`./forms/*.json` ↔ live tenant); visual verification panel (Playwright sidecar in-IDE); code-review-style flow where you read a diff before pushing |
+
+Rule of thumb: use MCP when an agent is driving, use the Extension when a human is driving (with agent assist on individual edits), use the CLI when there's no IDE in the loop. They all wrap the same dashboard API and the same Phase 11+12 dry_run/confirm_token gates.
 
 ## Quick Reference
 
@@ -74,6 +150,69 @@ Deploy **rejects** if any blocking item is missing. Always call `content_deploy_
 | At least 1 verified domain | `content_add_domain` |
 | At least 1 template (theme applied) | `template_apply_theme` |
 | At least 1 published page | `content_publish_page` |
+
+### Wave 3 contracts (Agent Trust Hardening, 2026-05-20)
+
+Three contracts shipped with the Agent Trust Hardening initiative (closed 2026-05-20) make it easier for an agent to act without bouncing back to the docs.
+
+#### `?format=llm` — opt-in guidance envelope
+
+Every read endpoint accepts `?format=llm` (or `Accept: application/vnd.spideriq+llm`). The response then carries an OPVS `guidance:` block with six top-level keys — and ONLY these six:
+
+| Key | Type | Purpose |
+|---|---|---|
+| `use` | string | One-line: what this endpoint is for |
+| `not` | string[] | Endpoints to use INSTEAD when this isn't the right tool |
+| `next` | string[] | The next-call chain (you usually do A then B then C) |
+| `warn` | string | One-line warning — gotchas, hidden coupling |
+| `pitfalls` | string[] | Common mistakes and how to fix them |
+| `limits` | object | Constraints (max items, batch size, rate caps) |
+
+**These six keys are FROZEN.** Any other top-level field inside `guidance:` is informational, not contract. Don't depend on it.
+
+**Honesty rule (F-8, 2026-05-20):** `guidance.warn` and `guidance.pitfalls` must describe what the endpoint ACTUALLY does, not what it COULD do. If a `warn:` line claims "you must pass `?dry_run=true` first" but a default POST returns a successful `id`, the warning is lying — file an upstream issue rather than working around it. Real read-side and immediate-write endpoints carry NO `confirm_token` envelope.
+
+#### Structured error envelopes
+
+Every 4xx/5xx response carries this shape:
+
+```json
+{
+  "error": {
+    "code": "fields_invalid",
+    "message": "Field validation failed",
+    "what_you_sent": { "fields[0].type": "txt" },
+    "what_was_expected": { "fields[0].type": "one of: short_text|long_text|email|phone|number|dropdown|checkbox|picture_choice|rating|nps|opinion_scale|date|file_upload|statement|yes_no" },
+    "suggested_action": "Re-issue with a valid type",
+    "suggested_url": "/api/v1/dashboard/content/forms?format=llm",
+    "docs": "https://docs.spideriq.ai/forms/fields"
+  }
+}
+```
+
+`error.code` is stable. `error.message` is not — never pattern-match on it. Read `what_was_expected` for shape diagnosis.
+
+#### `content_visual_check` consumer guide
+
+After every `content_publish_page` / `content_deploy_site`, call `content_visual_check` against the published URL. Catches silent-200 failures (server returns 200, page renders blank or with a broken component).
+
+```
+content_visual_check({
+  page_url: "https://acme.com/signup",
+  viewport: "desktop",        # enum: "desktop" | "mobile"
+  wait_for_text: "Get started",  # optional — wait until this text appears
+  expected_text: ["Free trial", "Sign up"],  # optional — assertions
+  expected_no_text: ["Lorem ipsum", "TODO"],
+  timeout_ms: 30000
+})
+# → { success, screenshot_url, dom: { iframe_count, iframe_srcs[], shadow_hosts[] }, console_errors[], failed_requests[], assertions: {...} }
+```
+
+**Assertion rule for embedded forms:** assert on `dom.shadow_hosts.includes("spideriq-form")`. The Forms widget renders inside an iframe whose body is opaque to the parent (cross-origin), so `body_text_preview` is the WRONG assertion target. The shadow-host tag IS visible from the parent DOM.
+
+#### Opt-in dry_run gate (F-8 honesty)
+
+The 10 destructive endpoints (`content_delete_page`, `content_publish_page`, `content_unpublish_page`, `content_update_settings`, `template_apply_theme`, `content_delete_component`, `content_publish_component`, `content_archive_component`, `content_deploy_site_preview`, `content_deploy_site_production`) accept `?dry_run=true` to receive a preview + `confirm_token`. **Not all gated endpoints require it on every call.** The default POST behavior varies per endpoint — `content_create_page` for instance creates immediately (returns `id`); `?dry_run=true` is OPT-IN to get a preview-first flow. Read each endpoint's `guidance.use` / `guidance.warn` (via `?format=llm`) for the actual default behavior, not the global rule.
 
 ### Error Responses (Phase 11+12)
 
@@ -397,7 +536,7 @@ Ready-to-run end-to-end: [`examples/personalized-landing.sh`](./examples/persona
 
 ### Booking / Appointments (SpiderBook — cal.com-powered, v1.0.0+)
 
-Customer-facing booking widget, standalone `/book/{flow_id}` route, and a `{% booking %}` Liquid tag for page templates. Flows are authored from the official archetype library (nail-salon, haircut, therapy, consultation, ...).
+Customer-facing booking widget, standalone `/book/{flow_id}` route (canonical for kind='booking' flows), and a `{% booking %}` Liquid tag for page templates. Flows are authored from the official archetype library (nail-salon, haircut, therapy, consultation, ...). Forms (kind='form') use `/f/{flow_id}` instead — same renderer, different URL surface.
 
 ```
 booking_template_list(category="nail-salon")
@@ -424,11 +563,13 @@ Reads: `booking_list(business_id, status?, since?)`, `booking_get(booking_id)`. 
 
 **Full guide:** [skills/booking/](./skills/booking/) · **End-to-end example:** [`examples/booking-flow.sh`](./examples/booking-flow.sh).
 
-### Forms (SpiderFlow — developer/agent preview, v1.13.0+)
+### Forms (developer/agent preview, v1.13.0+)
 
-Typeform-class multi-step forms — lead capture, NPS / CSAT surveys, intake forms, signup wizards. Reuses the same `booking_flows` table that powers SpiderBook, discriminated by `kind='form'`. Customer fills via the SpiderFlow embed loader (`embed.spideriq.ai/v1/loader.js`, 3 KB gzip ESM, inline + popup modes) or the standalone `/book/<flow_id>` route. **Status: developer / agent preview** — business-user dashboard ships in the next wave.
+Typeform-class multi-step forms — lead capture, NPS / CSAT surveys, intake forms, signup wizards. Reuses the same `booking_flows` table that powers SpiderBook, discriminated by `kind='form'`. Customer fills via the Forms embed loader (`embed.spideriq.ai/v1/loader.js`, 3 KB gzip ESM, inline + popup modes) or the standalone kind-aware `/f/<flow_id>` route. Legacy `/book/<flow_id>` URLs auto-301-redirect to `/f/<flow_id>` for back-compat. **Status: developer / agent preview** — business-user dashboard ships in the next wave.
 
-> **MCP package caveat:** the 20 `form_*` tools are in **kitchen-sink `@spideriq/mcp@1.13.0`** (144 tools) — **not** in `@spideriq/mcp-publish@1.12.1` (124 tools, the starter-kit default). The split exists because Antigravity / Claude Desktop / Codex-on-Responses silently drop MCP servers that report >128 tools. To use the form tools: edit `.mcp.json` to point at `@spideriq/mcp@1.13.0`, OR add it as a second MCP server entry alongside `mcp-publish`.
+> **MCP package caveat:** the `form_*` tools are in **kitchen-sink `@spideriq/mcp@^1.20.1`** — **not** in `@spideriq/mcp-publish@^1.17.2` (the starter-kit default). The split exists because Antigravity / Claude Desktop / Codex-on-Responses silently drop MCP servers that report >128 tools. To use the form tools: edit `.mcp.json` to point at `@spideriq/mcp@^1.20.1`, OR add it as a second MCP server entry alongside `mcp-publish`.
+
+> **Premium design options:** [shared/guides/forms-design-guide.md](../guides/forms-design-guide.md) — theme presets, layout variants, field-level styling overrides, welcome/thank-you screens, progress indicators, transitions, brand assets, accessibility, and the 14-rule validator. Start here when you want a polished form, not the default look.
 
 ```
 form_create(name="Free trial signup", business_id="<uuid>", fields=[
@@ -467,7 +608,7 @@ Validation: `form_validate` runs whole-flow structural validation client-side �
 - `form_publish` requires Cal.com `title` / `length_minutes` / `team_id` — for form-kind, pass any non-empty title, `length_minutes=1`, `team_id=0`
 - `form_test_submit ?test=true` honoured for `LOAD_TEST_CLIENT_ID` only — for other clients, use a real flow with a unique answer payload + clean up manually
 
-**SpiderPublish VSCode extension 0.2.0+** treats `kind='form'` rows the same as pages: `Pull Content` writes each to `./forms/<flow_id>.json`; inline form validator catches 14 rule classes with red squiggles; `Push Content` includes form rows; `SpiderPublish: Preview Form` opens `/book/<flow_id>` in the browser.
+**SpiderPublish VSCode / Cursor / Antigravity extension 0.4.0+** treats `kind='form'` rows the same as pages: `Pull Content` writes each to `./forms/<flow_id>.json`; inline form validator catches 14 rule classes with red squiggles; `Push Content` includes form rows; `SpiderPublish: Preview Form` opens `/f/<flow_id>` in the browser. The 0.4.0+ extensions also ship an in-IDE `content_visual_check` panel — runs the Playwright sidecar and surfaces `dom.shadow_hosts` + console errors + screenshot diff for the page you're authoring.
 
 **`spideriq form` CLI** ships in `@spideriq/cli@1.13.0+` with 7 verbs (`create` / `get` / `update` / `publish` / `embed-snippet` / `responses list` / `responses get`). Mirrors `spideriq booking` 2-phase preview/confirm with `--yolo` / `--confirm <token>` / `--json`.
 
@@ -728,7 +869,8 @@ Multi-step workflows that compose MCP tools. Live at **[skills/](skills/)** in t
 
 **Core building blocks** (exposed via `@spideriq/mcp-publish` — these SKILL.md files are the human/agent reference):
 - [content-platform](skills/content-platform/) — Pages, posts (with authors/tags/categories), docs, nav, settings, components, **directory pages**, component site-wide propagation, section overrides
-- [booking](skills/booking/) — **Appointments / bookings** powered by cal.com. Flow authoring, services, bookings, template library. Ships a `/book/{flow_id}` route + `{% booking %}` Liquid tag (in `@spideriq/mcp@1.0.0` kitchen-sink)
+- [booking](skills/booking/) — **Appointments / bookings** powered by cal.com. Flow authoring, services, bookings, template library. Ships a `/book/{flow_id}` route (canonical for kind='booking' flows) + `{% booking %}` Liquid tag (in `@spideriq/mcp@^1.20.1` kitchen-sink)
+- [forms](skills/forms/) — **Multi-step Forms** (kind='form') — lead capture, NPS / CSAT surveys, intake forms. Ships `/f/{flow_id}` standalone route + the `embed.spideriq.ai/v1/loader.js` loader for inline/popup embeds on any site (in `@spideriq/mcp@^1.20.1` kitchen-sink). See [forms-design-guide](skills/forms-design-guide/) for the premium design walkthrough.
 - [templates-engine](skills/templates-engine/) — Liquid templates, themes, deploy to edge
 - [upload-host-media](skills/upload-host-media/) — Media upload to CDN (including local-filesystem `upload_local_file` / `_directory`)
 - [agentdocs](skills/agentdocs/) — Versioned docs projects
@@ -787,7 +929,7 @@ Tier 3 `impl.ts` files use only Node 18+ stdlib (`fetch`, `fs`, `path`) — zero
 
 - [SpiderPublish Content Platform — Full MCP Surface](.cursor/rules/content-platform.mdc) — Full content_* / directory_* / playbook_* MCP namespace overview: pages, posts, docs, navigation, settings, components, domains, directory pages, component site-wide propagation, section overrides.
 - [SpiderBook — Appointment-Booking MCP Surface](.cursor/rules/booking.mdc) — Full booking_* MCP namespace: cal.
-- [SpiderFlow — Multi-Step Form Authoring MCP Surface](.cursor/rules/forms.mdc) — Full form_* MCP namespace (20 tools): Typeform-class multi-step forms, lead capture, NPS / CSAT surveys, intake forms.
+- [Forms — Multi-Step Form Authoring MCP Surface](.cursor/rules/forms.mdc) — Full form_* MCP namespace: Typeform-class multi-step forms, lead capture, NPS / CSAT surveys, intake forms.
 - [Liquid Templates + Themes + Edge Deploy](.cursor/rules/templates-engine.mdc) — template_* / content_deploy_site_* MCP surface for Liquid templates, themes, and Cloudflare edge deploy.
 - [SpiderMedia — Image / File / Video Upload](.cursor/rules/upload-host-media.mdc) — media_* MCP namespace: upload images, files, videos to the SpiderMedia CDN.
 - [AgentDocs — Versioned Documentation Projects](.cursor/rules/agentdocs.mdc) — agentdocs_* MCP namespace: build versioned documentation projects (Mintlify-style) with sidebar config, MDX pages, full-text search, and edge deploy.
@@ -799,3 +941,4 @@ Tier 3 `impl.ts` files use only Node 18+ stdlib (`fetch`, `fs`, `path`) — zero
 - [Pick the Right @spideriq/mcp-* Package](.cursor/rules/pick-mcp-package.mdc) — Decide which @spideriq/mcp-* npm package to install.
 - [@spideriq/cli Quick Reference](.cursor/rules/cli-quick-reference.mdc) — Run SpiderIQ from the terminal via @spideriq/cli — auth flow, project binding, pages CRUD, marketplace search, deploy, output formats.
 - [Install + Set Up the SpiderPublish IDE Extension](.cursor/rules/ide-extension-setup.mdc) — Install + bind the SpiderPublish IDE extension (SpiderIQ.
+- [Forms — Premium Design Guide](.cursor/rules/forms-design-guide.mdc) — Author polished Forms with theme presets, layout variants, field-level styling overrides, welcome / thank-you screens, progress indicators, transitions, brand assets, accessibility, and the 14-rule validator.
