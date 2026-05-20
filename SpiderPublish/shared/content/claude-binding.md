@@ -480,7 +480,7 @@ Listings auto-join `/sitemap.xml` on publish. Override default templates via `co
 
 ## Booking (Appointments)
 
-Cal.com-powered appointment booking for any tenant. Ships a customer widget (`<spider-booking-widget>`), a standalone route at `/book/{flow_id}`, and a `{% booking %}` Liquid tag for embedding inside any page template.
+Cal.com-powered appointment booking for any tenant. Ships a customer widget (`<spider-booking-widget>`), a standalone route at `/book/{flow_id}` (canonical for kind='booking' flows), and a `{% booking %}` Liquid tag for embedding inside any page template. Forms (kind='form') use `/f/{flow_id}` instead.
 
 ```
 # 1. Find an archetype and clone it into the tenant's library

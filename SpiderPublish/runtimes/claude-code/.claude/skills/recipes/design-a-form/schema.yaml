@@ -161,7 +161,7 @@ steps:
         media: $item.media
 
   - id: preview
-    description: Get the public preview URL — /book/<flow_id> on the tenant's primary domain. No API call.
+    description: Get the public preview URL — /f/<flow_id> on the tenant's primary domain (kind-aware route; legacy /book/<flow_id> 301-redirects here). No API call.
     tool: form_preview_url
     payload:
       flow_id: $apply_theme.flow_id or $inputs.flow_id

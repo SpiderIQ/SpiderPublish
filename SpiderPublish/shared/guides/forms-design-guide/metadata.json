@@ -1,0 +1,13 @@
+{
+  "title": "Forms — Premium Design Guide",
+  "summary": "Author polished Forms with theme presets, layout variants, field-level styling overrides, welcome / thank-you screens, progress indicators, transitions, brand assets, accessibility, and the 14-rule validator. Covers field type catalog with use-cases, conditional logic patterns, hidden-field UTM capture, the 9-step authoring flow (list → create → fields → logic → validate → test-submit → publish → embed → visual-check), three embed methods (standalone / inline / popup), submission contracts, and 10 common gotchas. Use when the user asks 'make this form look good', 'theme my form', 'multi-step form design', 'brand my form', 'Typeform-class form', 'NPS / CSAT form'.",
+  "createdAt": "2026-05-20T00:00:00Z",
+  "updatedAt": "2026-05-20T00:00:00Z",
+  "references": [
+    "SpiderPublish/shared/core-skills/forms/SKILL.md",
+    "SpiderPublish/shared/core-skills/forms/schema.yaml",
+    "SpiderPublish/shared/recipes/build-lead-gen-form/SKILL.md",
+    "SpiderPublish/shared/recipes/design-a-form/SKILL.md",
+    "SpiderPublish/shared/recipes/idap-fill-from-form/SKILL.md"
+  ]
+}

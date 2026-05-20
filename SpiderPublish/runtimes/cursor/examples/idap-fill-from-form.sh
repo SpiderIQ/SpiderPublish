@@ -118,7 +118,7 @@ echo
 echo "Done."
 echo "  flow_id:     $FLOW_ID"
 echo "  status:      $STATUS"
-echo "  Preview URL: $API_BASE/book/$FLOW_ID"
+echo "  Preview URL: $API_BASE/f/$FLOW_ID    # (legacy /book/$FLOW_ID still 301-redirects)"
 echo
 echo "On submit, each field with a crm_target dual-writes into"
 echo "  norm_cli_<tenant>.<resource_type>.<column>"

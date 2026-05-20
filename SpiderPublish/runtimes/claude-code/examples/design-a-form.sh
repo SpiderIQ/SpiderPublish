@@ -89,5 +89,5 @@ curl -s -X PATCH \
 # ─── 3. Print the preview URL ────────────────────────────────────────────────
 echo
 echo "Done."
-echo "  Preview URL: $API_BASE/book/$FLOW_ID"
+echo "  Preview URL: $API_BASE/f/$FLOW_ID    # (legacy /book/$FLOW_ID still 301-redirects)"
 echo "  Reload to see the new theme + first-question background."

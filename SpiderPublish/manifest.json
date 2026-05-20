@@ -129,8 +129,8 @@
       "id": "forms",
       "kind": "core",
       "ki_index": 21,
-      "title": "SpiderFlow — Multi-Step Form Authoring MCP Surface",
-      "summary": "Full form_* MCP namespace (20 tools): Typeform-class multi-step forms, lead capture, NPS / CSAT surveys, intake forms. Reuses booking_flows table with kind='form'. 15+ field types, conditional logic with variables + hidden fields, structural validation, embed snippet generation via the embed.spideriq.ai/v1/loader.js loader (3 KB, inline + popup). NOT in @spideriq/mcp-publish — only in kitchen-sink @spideriq/mcp@1.13.0. Use whenever the user asks for 'a form', 'survey', 'questionnaire', 'NPS', 'lead capture', 'intake form', 'Typeform alternative'."
+      "title": "Forms — Multi-Step Form Authoring MCP Surface",
+      "summary": "Full form_* MCP namespace: Typeform-class multi-step forms, lead capture, NPS / CSAT surveys, intake forms. Reuses booking_flows table with kind='form'. 15+ field types, conditional logic with variables + hidden fields, structural validation, embed snippet generation via the embed.spideriq.ai/v1/loader.js loader (3 KB, inline + popup). Standalone route /f/{flow_id} (legacy /book/{flow_id} 301-redirects here). NOT in @spideriq/mcp-publish — only in kitchen-sink @spideriq/mcp@^1.20.1. Use whenever the user asks for 'a form', 'survey', 'questionnaire', 'NPS', 'lead capture', 'intake form', 'Typeform alternative'."
     },
     {
       "id": "templates-engine",
@@ -209,6 +209,13 @@
       "ki_index": 24,
       "title": "Fill the CRM from a Form — IDAP Field Types + crm_target",
       "summary": "Make a Form populate the tenant CRM on submit. Wire each form field to a typed norm_cli_<tenant>.<resource_type>.<column> via crm_target, and use the 8 IDAP-anchored field types (url / country / region / postal_code / address / datetime / currency / place) so the value is structurally compatible with the column. Includes the field-type ↔ column compatibility matrix and the server-proxy behaviour of the place field (graceful fallback to free text when GOOGLE_PLACES_API_KEY is not provisioned). Use whenever the user asks for 'forms that fill the CRM', 'lead form with structured CRM fields', 'address picker on a form', 'Google Places form field', 'country picker', 'currency form field'."
+    },
+    {
+      "id": "forms-design-guide",
+      "kind": "guide",
+      "ki_index": 25,
+      "title": "Forms — Premium Design Guide",
+      "summary": "Author polished Forms with theme presets, layout variants, field-level styling overrides, welcome / thank-you screens, progress indicators, transitions, brand assets, accessibility, and the 14-rule validator. Covers field type catalog with use-cases, conditional logic patterns, hidden-field UTM capture, the 9-step authoring flow (list → create → fields → logic → validate → test-submit → publish → embed → visual-check), three embed methods (standalone / inline / popup), submission contracts, and 10 common gotchas. Use when the user asks 'make this form look good', 'theme my form', 'multi-step form design', 'brand my form', 'Typeform-class form', 'NPS / CSAT form'."
     }
   ]
 }

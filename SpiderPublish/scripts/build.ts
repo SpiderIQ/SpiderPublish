@@ -210,6 +210,18 @@ const buildClaudeDesktopReadme = (manifest: z.infer<typeof ManifestSchema>): str
 
 Claude Desktop has no auto-bootstrap (no MCP discovery from a folder, no skill loading). Setup is manual.
 
+## Phase 0 — Verify your MCP bundle BEFORE acting
+
+A stale MCP bundle is the #1 cause of confidently-wrong work. Before ANY authoring/editing action, confirm your bundle is current.
+
+**Quick check (≤ 30s):**
+
+1. Ask Claude Desktop for the current MCP tool list. Confirm these tools are present: \`form_preview_url\`, \`form_create\` (or \`form_upsert\`), \`form_publish\`, \`form_get_embed_snippet\`, \`content_create_page\`, \`content_visual_check\`, \`content_deploy_site\`.
+2. Call \`form_preview_url({ flow_id: "<any existing flow_id>" })\` — confirm \`response.public_url\` contains \`/f/<id>\`, NOT \`/book/<id>\`.
+3. Call any read endpoint with \`?format=llm\` and confirm a \`guidance\` block returns (six top-level keys: \`use / not / next / warn / pitfalls / limits\`).
+
+If anything fails: edit \`claude_desktop_config.json\` below, bump to \`@spideriq/mcp-publish@^1.17.2\`, restart Claude Desktop, re-run. **DO NOT proceed until Phase 0 passes.**
+
 ## 1. Add MCP server
 
 Edit \`~/Library/Application Support/Claude/claude_desktop_config.json\` (macOS) or the Windows equivalent:
@@ -219,7 +231,7 @@ Edit \`~/Library/Application Support/Claude/claude_desktop_config.json\` (macOS)
   "mcpServers": {
     "spideriq-publish": {
       "command": "npx",
-      "args": ["-y", "@spideriq/mcp-publish@latest"],
+      "args": ["-y", "@spideriq/mcp-publish@^1.17.2"],
       "env": {
         "SPIDERIQ_TOKEN": "<your-PAT>",
         "SPIDERIQ_API_URL": "https://spideriq.ai"

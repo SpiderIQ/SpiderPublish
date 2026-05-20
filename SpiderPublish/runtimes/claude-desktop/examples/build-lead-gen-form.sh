@@ -114,7 +114,7 @@ echo "   status: $STATUS"
 # ─── 4. Print the preview URL + paste-ready popup embed snippet ───────────────
 echo
 echo "Done."
-echo "  Preview URL:  $API_BASE/book/$FLOW_ID"
+echo "  Preview URL:  $API_BASE/f/$FLOW_ID    # (legacy /book/$FLOW_ID still 301-redirects)"
 echo
 echo "  Paste-ready embed snippet (popup mode):"
 echo "  ─────────────────────────────────────────"
