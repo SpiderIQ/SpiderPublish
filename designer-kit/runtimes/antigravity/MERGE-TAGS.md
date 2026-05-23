@@ -283,4 +283,4 @@ Both surfaces are always available.
 
 ---
 
-Part of the [SpiderPublish starter kit](https://github.com/martinshein/SpideriQ-ai/tree/main/SpiderPublish). See `CLAUDE.md` and `AGENTS.md` for the full agent-first authoring guide.
+Part of the [SpiderPublish starter kit](https://github.com/SpiderIQ/SpiderPublish/tree/main/designer-kit). See `CLAUDE.md` and `AGENTS.md` for the full agent-first authoring guide.

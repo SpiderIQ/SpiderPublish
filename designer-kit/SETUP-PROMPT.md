@@ -9,7 +9,7 @@ You are about to set up the SpiderPublish Starter Kit in this project. Identify 
 ## If you are Claude Code
 
 ```bash
-npx degit martinshein/SpideriQ-ai/SpiderPublish/runtimes/claude-code .
+npx degit SpiderIQ/SpiderPublish/designer-kit/runtimes/claude-code .
 ```
 
 Then read `CLAUDE.md` from the project root. Skills auto-load from `.claude/skills/` based on user intent. The bundled `.mcp.json` configures `@spideriq/mcp-publish` (87 tools, atomic publish slice). Continue with:
@@ -21,7 +21,7 @@ Then read `CLAUDE.md` from the project root. Skills auto-load from `.claude/skil
 ## If you are Google Antigravity
 
 ```bash
-npx degit martinshein/SpideriQ-ai/SpiderPublish/runtimes/antigravity ./.spideriq-ref
+npx degit SpiderIQ/SpiderPublish/designer-kit/runtimes/antigravity ./.spideriq-ref
 bash ./.spideriq-ref/install-knowledge-items.sh
 cp ./.spideriq-ref/.mcp.json ./.mcp.json   # if your project doesn't already have one
 ```
@@ -33,7 +33,7 @@ Continue with the same auth + bind steps as above. Restart Antigravity so it pic
 ## If you are Cursor
 
 ```bash
-npx degit martinshein/SpideriQ-ai/SpiderPublish/runtimes/cursor .
+npx degit SpiderIQ/SpiderPublish/designer-kit/runtimes/cursor .
 ```
 
 Cursor auto-loads `.cursor/rules/_index.mdc` (root rule) and per-skill rules under `.cursor/rules/*.mdc` based on description match. The bundled `.mcp.json` registers `@spideriq/mcp-publish`. Read `AGENTS.md` for the tool catalog.
@@ -45,7 +45,7 @@ Continue with the auth + bind steps. Restart Cursor so it picks up the new MCP c
 Claude Desktop has no auto-bootstrap (no MCP discovery from a folder, no skill loading). Use the manual setup:
 
 ```bash
-npx degit martinshein/SpideriQ-ai/SpiderPublish/runtimes/claude-desktop ./.spideriq-ref
+npx degit SpiderIQ/SpiderPublish/designer-kit/runtimes/claude-desktop ./.spideriq-ref
 ```
 
 Then read `./.spideriq-ref/README.md` — it walks you through editing `claude_desktop_config.json`, registering `@spideriq/mcp-publish`, and the manual prompt-pasting workflow (no skill auto-loading on Claude Desktop).

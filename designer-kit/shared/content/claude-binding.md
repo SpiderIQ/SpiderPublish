@@ -675,4 +675,4 @@ Full recipe: `skills/recipes/marketplace-search-and-insert/`. Runnable: `example
 
 ## GitHub
 
-- Public repo: https://github.com/martinshein/SpideriQ-ai/tree/main/SpiderPublish
+- Public repo: https://github.com/SpiderIQ/SpiderPublish/tree/main/designer-kit
