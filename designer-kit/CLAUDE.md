@@ -4,7 +4,7 @@
 >
 > **[runtimes/claude-code/CLAUDE.md](./runtimes/claude-code/CLAUDE.md)**
 >
-> If you bootstrapped via `npx degit martinshein/SpideriQ-ai/SpiderPublish/runtimes/claude-code .`, you already have it as `CLAUDE.md` in your project root.
+> If you bootstrapped via `npx degit SpiderIQ/SpiderPublish/designer-kit/runtimes/claude-code .`, you already have it as `CLAUDE.md` in your project root.
 
 ## Why the move?
 

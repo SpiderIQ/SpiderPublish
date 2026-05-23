@@ -2,7 +2,7 @@
 
 > **AI-Native Agency OS for the agent-driven web.** CMS · CRM · workflows · booking · CRO · personalization · scraping · media — one runtime, MCP-native, every published tenant page dual-rendered for humans and LLMs.
 
-The public Starter Kit for SpiderIQ. Drop into any project with `npx degit martinshein/SpideriQ-ai/SpiderPublish` — your resident LLM agent reads the kit cold and learns to drive the platform. Build websites, blogs, landing pages, and personalized outreach pages entirely through agents. No browser needed. Deploy to Cloudflare's edge in 2–5 seconds.
+The public Starter Kit for SpiderIQ. Drop into any project with `npx degit SpiderIQ/SpiderPublish/designer-kit` — your resident LLM agent reads the kit cold and learns to drive the platform. Build websites, blogs, landing pages, and personalized outreach pages entirely through agents. No browser needed. Deploy to Cloudflare's edge in 2–5 seconds.
 
 ## What this actually is, in 30 seconds
 
@@ -80,17 +80,17 @@ The Starter Kit ships per-runtime trees under [`runtimes/`](./runtimes/). Pull o
 
 ```bash
 # Claude Code (CLI / VSCode / JetBrains plugin / Windsurf / VSCode-with-Claude-Code-extension)
-npx degit martinshein/SpideriQ-ai/SpiderPublish/runtimes/claude-code my-site
+npx degit SpiderIQ/SpiderPublish/designer-kit/runtimes/claude-code my-site
 
 # Google Antigravity
-npx degit martinshein/SpideriQ-ai/SpiderPublish/runtimes/antigravity my-site
+npx degit SpiderIQ/SpiderPublish/designer-kit/runtimes/antigravity my-site
 bash my-site/install-knowledge-items.sh   # copies KIs to ~/.gemini/antigravity/knowledge/
 
 # Cursor
-npx degit martinshein/SpideriQ-ai/SpiderPublish/runtimes/cursor my-site
+npx degit SpiderIQ/SpiderPublish/designer-kit/runtimes/cursor my-site
 
 # Claude Desktop (manual setup, no auto-bootstrap)
-npx degit martinshein/SpideriQ-ai/SpiderPublish/runtimes/claude-desktop my-site
+npx degit SpiderIQ/SpiderPublish/designer-kit/runtimes/claude-desktop my-site
 # then read my-site/README.md for the manual claude_desktop_config.json edit
 
 cd my-site

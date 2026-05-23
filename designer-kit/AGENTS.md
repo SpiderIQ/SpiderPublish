@@ -5,7 +5,7 @@
 > - **[runtimes/antigravity/AGENTS.md](./runtimes/antigravity/AGENTS.md)** — full tool catalog with payload schemas (Antigravity)
 > - **[runtimes/cursor/AGENTS.md](./runtimes/cursor/AGENTS.md)** — same catalog, Cursor-friendly framing
 >
-> If you bootstrapped via `npx degit martinshein/SpideriQ-ai/SpiderPublish/runtimes/<runtime> .`, you already have it as `AGENTS.md` in your project root.
+> If you bootstrapped via `npx degit SpiderIQ/SpiderPublish/designer-kit/runtimes/<runtime> .`, you already have it as `AGENTS.md` in your project root.
 
 ## Why the move?
 

@@ -60,7 +60,7 @@ Copy-paste shell scripts under [examples/](../examples/). Each one uses only the
 
 **Cursor / Antigravity** — link the github path in your project context:
 ```
-https://github.com/martinshein/SpideriQ-ai/tree/main/SpiderPublish/skills/recipes/scroll-sequence
+https://github.com/SpiderIQ/SpiderPublish/tree/main/designer-kit/skills/recipes/scroll-sequence
 ```
 
 **Node CLI** — Tier 3 impl.ts files are self-contained scripts:

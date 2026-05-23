@@ -115,7 +115,7 @@ These will be resolved in P1.M1 / P1.M2; documented inline so agents work around
 
 ## VSCode extension (SpiderPublish 0.2.0+)
 
-If you're using the [SpiderPublish VSCode extension](https://github.com/martinshein/SpideriQ-ai/tree/main/SpiderPublish), forms are first-class:
+If you're using the [SpiderPublish VSCode extension](https://github.com/SpiderIQ/SpiderPublish/tree/main/designer-kit), forms are first-class:
 
 - **Pull:** `SpiderPublish: Pull Content` enumerates every `kind='form'` row and writes each to `./forms/<flow_id>.json`
 - **Edit:** open any `./forms/*.json`; inline form validator catches 14 rule classes (R0–R14) with red squiggles
