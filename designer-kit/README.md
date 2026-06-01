@@ -115,7 +115,7 @@ npx @spideriq/cli auth whoami
 npx @spideriq/cli use --list
 
 # Bind — writes ./spideriq.json (commit it!)
-npx @spideriq/cli use <project>   # short id cli_xxx, brand slug, or company name
+npx @spideriq/cli use <workspace>   # short id cli_xxx, brand slug, or company name (a workspace = your account). Add --project <proj_…> to bind a specific site
 ```
 
 From this point every dashboard call the CLI/MCP makes auto-rewrites to `/api/v1/dashboard/projects/{project_id}/...` and destructive operations go through a preview → confirm flow. Skip this step and your calls fall back to legacy URLs stamped `Deprecation: true` / `Sunset: 2026-05-14` — they work for now but will stop after that date.
@@ -221,7 +221,7 @@ git commit -m "feat(scroll-sequence): clarify GSAP fallback path"
 ```
 Your AI Agent (Claude Code, Cursor, Windsurf, Antigravity...)
     │
-    │  loads ./spideriq.json → injects project_id
+    │  loads ./spideriq.json → injects workspace_id (+ project_id)
     │  MCP / CLI / API
     ▼
 SpiderPublish API  ─────────── SpiderIQ IDAP (CRM data)
