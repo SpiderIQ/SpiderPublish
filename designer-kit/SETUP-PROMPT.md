@@ -15,7 +15,7 @@ npx degit SpiderIQ/SpiderPublish/designer-kit/runtimes/claude-code .
 Then read `CLAUDE.md` from the project root. Skills auto-load from `.claude/skills/` based on user intent. The bundled `.mcp.json` configures `@spideriq/mcp-publish` (87 tools, atomic publish slice). Continue with:
 
 1. `npx @spideriq/cli auth request --email <admin-email>` — request a PAT (admin must approve)
-2. `npx @spideriq/cli use --list` then `npx @spideriq/cli use <project>` — bind this directory (writes `./spideriq.json`, **commit it**)
+2. `npx @spideriq/cli use --list` then `npx @spideriq/cli use <workspace>` — bind this directory to a workspace (writes `workspace_id` into `./spideriq.json`, **commit it**). Add `--project <proj_…>` to also bind a specific site, or run `npx @spideriq/cli projects list` to see/create them
 3. Restart Claude Code so it picks up the new `.mcp.json`
 
 ## If you are Google Antigravity
@@ -64,10 +64,10 @@ After bootstrapping, verify with:
 
 ```bash
 npx @spideriq/cli auth whoami
-# → should print your client_id, brand, and bound project
+# → should print your client_id, brand, bound workspace (+ project, if one is bound)
 ```
 
-If `whoami` reports "not authenticated" or "no project bound," loop back through the auth + bind steps. Most issues at this stage are missing `./spideriq.json` (Phase 11+12 Lock 3).
+If `whoami` reports "not authenticated" or "no workspace bound," loop back through the auth + bind steps. Most issues at this stage are missing `./spideriq.json` (Phase 11+12 Lock 3).
 
 ## Why per-runtime trees?
 
