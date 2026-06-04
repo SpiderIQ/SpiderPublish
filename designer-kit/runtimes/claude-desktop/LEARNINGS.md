@@ -2,6 +2,15 @@
 
 Things that cause silent failures or broken deploys. Read before building.
 
+## Jun 2026 — A `noindex` page is absent from `sitemap.xml` AND `llms.txt` — that's expected (Per-page indexing control, 2026-06-04)
+
+Every page has a `robots` field (default `index,follow`). Setting it to a `noindex` value (e.g. `noindex,follow`) now removes the page from **both** the site's `sitemap.xml` and its `llms.txt` — so neither search engines nor AI crawlers are pointed at it. If a published page is missing from those files, **check its `robots` first — it's a setting, not a bug.**
+
+- System pages (`login`, `signup`, `forgot-password`, `404`) ship as `noindex` by default — they're intentionally kept out of both files.
+- To list a page again: set `robots` back to `index,follow` — `content_update_page(page_id, robots="index,follow")` — or flip the page-editor "Allow search engines to index this page" toggle. The `follow`/`nofollow` half is preserved when you toggle.
+- `llms.txt` page entries now include each page's `seo_description`, so set it (`content_update_page(page_id, seo_description="…")`) for clearer AI-crawler summaries.
+- Re-crawl lag: the files update immediately, but search engines re-crawl on their own schedule — changes take time to reflect in results.
+
 ## May 2026 — `form_*` tools missing in your IDE? Check your MCP package (SpiderFlow Wave 2, 2026-05-11)
 
 **The trap:** your agent reports `Unknown tool: form_create` (or any other `form_*` name) even though the kit's docs list 20 form tools. The form tools live in **`@spideriq/mcp@1.13.0`** (the kitchen-sink MCP package, 144 tools). The starter kit's default `.mcp.json` ships pointed at **`@spideriq/mcp-publish@1.12.1`** (the atomic publish package, 124 tools — none of which are `form_*`).
