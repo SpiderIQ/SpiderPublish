@@ -1,0 +1,42 @@
+{
+  "_description": "System (global) block — already installed for every site. You do NOT create it; reference it by slug in a page's blocks[], or tag a blog post with vayapin_pins to auto-render a strip. Renders a grid of VayaPin location cards (logo/photo + pin id + title + subtitle → vayapin.com/CC:NAME).",
+  "_tier": "system",
+  "_global": true,
+  "_docs": "https://docs.spideriq.ai/site-builder/vayapin-cards",
+
+  "slug": "sys-vayapin-cards",
+  "name": "VayaPin Cards",
+  "category": "vayapin",
+
+  "_usage_page_block": {
+    "_comment": "Add to a page's blocks[]. Two modes — set `pins` for an exact set, OR a query (country/city/category/q). `pins` wins if both are set.",
+    "pinned_mode": {
+      "id": "vayapin-cards-1",
+      "type": "component",
+      "component_slug": "sys-vayapin-cards",
+      "props": { "pins": ["BB:TAPAS", "BB:CHAMPERS"], "heading": "Featured spots" }
+    },
+    "query_mode": {
+      "id": "vayapin-cards-1",
+      "type": "component",
+      "component_slug": "sys-vayapin-cards",
+      "props": { "country": "bb", "category": "restaurant", "heading": "Barbados restaurants", "limit": 6 }
+    }
+  },
+
+  "props_schema": {
+    "type": "object",
+    "properties": {
+      "pins":     { "type": "array", "items": { "type": "string" }, "title": "Pin ids", "description": "Explicit ids like \"BB:TAPAS\". Pinned mode — exact cards in order. Ignores the query fields when set." },
+      "heading":  { "type": "string", "title": "Heading", "description": "Optional section heading." },
+      "country":  { "type": "string", "title": "Country", "description": "Query mode: 2-letter pin namespace, e.g. \"bb\"." },
+      "city":     { "type": "string", "title": "City", "description": "Query mode: city / settlement filter." },
+      "category": { "type": "string", "title": "Category", "description": "Query mode: category slug, e.g. \"restaurant\"." },
+      "q":        { "type": "string", "title": "Search", "description": "Query mode: full-text query." },
+      "limit":    { "type": "integer", "title": "Limit", "minimum": 1, "maximum": 50, "default": 12, "description": "Query mode: max cards." }
+    }
+  },
+
+  "_resolve_ids": "Resolve valid pin ids first: GET /api/v1/content/vayapin/cards?q=tapas&country=bb (or ?pins=BB:TAPAS to verify). Only public + listed pins render; unknown ones are skipped.",
+  "_on_posts": "To put a card strip on a blog POST instead of a page, set the post's `vayapin_pins` field (editor pill picker, the API field, or `spideriq content posts update <id> --vayapin-pins \"BB:TAPAS,BB:CHAMPERS\"`). The blog template renders the strip automatically — no block needed."
+}

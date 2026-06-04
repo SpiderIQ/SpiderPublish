@@ -292,3 +292,15 @@ The agent-discovery surface (`marketplace_search`, `list_data_sources`, `set_*_a
 | Calling `set_bg_video_agent_meta` from a project-scoped token | 403 super_admin-required | The bg-video + site-template catalogs are global — only super_admin can mutate. Components are per-tenant, so `set_component_agent_meta` works with the project token. |
 | Forgetting that `set_*` mutation tools default `dry_run=true` | First call returns a preview envelope + `confirm_token`, no mutation | Either pass `dry_run=false` explicitly OR call once for preview then again with `confirm_token=<token>` (recommended — same Phase 11+12 pattern as deploy/publish/delete) |
 | `palette` rejected with "list too long" | Cap is 12 entries on the write path | Trim the palette to ≤12. The catalog leans on a small consistent vocabulary (monochrome, deep-blue, cinematic, …) — long lists don't help search precision. |
+
+## VayaPin Cards (2026-06-04)
+
+Put VayaPin locations on a site as cards — on a blog post (auto strip) or any page (the `sys-vayapin-cards` block). New surface, new pitfalls.
+
+| Gotcha | What Happens | Fix |
+|--------|-------------|-----|
+| Inventing pin ids for `vayapin_pins` or the block | Unknown / unlisted / non-public pins render nothing — they're silently skipped | Resolve real ids first: `GET /content/vayapin/cards?q=tapas&country=bb` (or `?pins=BB:TAPAS` to verify one). Only public + listed pins render. |
+| Expecting a card strip on a post with no `vayapin_pins` | Nothing renders — the strip is opt-in per post | Set the post's `vayapin_pins` (editor pill picker, the API field, or `spideriq content posts update <id> --vayapin-pins "BB:TAPAS,BB:CHAMPERS"`). |
+| Pin id case / format | `bb:tapas` vs `BB:TAPAS` — ids are normalized to UPPERCASE `COUNTRY:SLUG` | Use `COUNTRY:SLUG`; case is normalized for you, but malformed entries (no colon) are dropped. |
+| Setting both `pins` and a query on the `sys-vayapin-cards` block | Only `pins` is used — the query fields are ignored | Pick one mode: `pins` for an exact set, OR `country`/`city`/`category`/`q` for a live query. |
+| Trying to create `sys-vayapin-cards` via `content_create_component` | It's a global system block, already installed — you can't recreate it | Reference it by slug in a page's `blocks[]` (see `components/sys-vayapin-cards.json`). |
