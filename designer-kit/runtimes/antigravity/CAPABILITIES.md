@@ -19,7 +19,7 @@
 | 5 | CRM (leads / contacts / pipelines) | IDAP-fed lead store, dashboard for human curation | dashboard surface; not in this kit |
 | 6 | Workflows | distributed orchestration over the worker fleet for campaigns + lead pipelines | dashboard / future kit; not exposed here |
 | 7 | CRO tools (interactive class) | timer · exit-intent popup · social-proof toast · stock bar · sticky bar · pricing toggle · 21-card library | ✓ via `marketplace_search` |
-| 8 | GEO (W6+W7 extensions) | llms.txt · md-mirror · schema-injector · contextual-menu · human/agent toggle · sitemap · RSS | ✓ [GEO.md](./GEO.md), `components/extension-*.json` |
+| 8 | GEO (W6+W7 extensions) | llms.txt · md-mirror · schema-injector · contextual-menu · human/agent toggle · sitemap · RSS · per-page index control (a page's `robots` field gates its inclusion in both `sitemap.xml` and `llms.txt`) | ✓ [GEO.md](./GEO.md), `components/extension-*.json` |
 | 9 | Scraping + enrichment (data foundation) | SpiderSite · SpiderMaps · SpiderPeople · SpiderVerify · SpiderPhone · SpiderBrowser · IDAP (~44k cities) | feeds personalization + directories; jobs trigger via dashboard |
 | 10 | Media services | upload / download / stream · R2-backed `media.cdn.spideriq.ai` · ffmpeg pipeline → scroll-sequence frames | ✓ [skills/upload-host-media/](./skills/upload-host-media/), [examples/bulk-media-upload.sh](./examples/bulk-media-upload.sh), [examples/scroll-sequence.sh](./examples/scroll-sequence.sh) |
 | 11 | Agent surface (CLI / MCP / IDE extension / Skills) | four ways to drive the runtime; same engine, different rendering | ✓ [SURFACES.md](./SURFACES.md) |
