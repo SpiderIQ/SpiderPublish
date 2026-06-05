@@ -90,12 +90,12 @@ if '${AUTH_TARGET}' == 'dashboard':
 print(json.dumps(p))
 ")
 # dry_run first (Phase 11+12 — destructive ops are 2-phase: preview → confirm)
-CONFIRM_TOKEN=$(curl -sS -X POST "${API_URL}/api/v1/dashboard/content/pages/${PAGE_ID}/sections?dry_run=true" \
+CONFIRM_TOKEN=$(curl -sS -X POST "${API_URL}/api/v1/dashboard/content/pages/${PAGE_ID}/insert-section?dry_run=true" \
   -H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json" \
   -d "{\"component_slug\":\"spideriq/auth-login\",\"props\":${PROPS},\"position\":\"end\"}" \
   | python3 -c "import json,sys; print(json.load(sys.stdin).get('confirm_token',''))")
 if [ -n "$CONFIRM_TOKEN" ]; then
-  curl -sS -X POST "${API_URL}/api/v1/dashboard/content/pages/${PAGE_ID}/sections?confirm_token=${CONFIRM_TOKEN}" \
+  curl -sS -X POST "${API_URL}/api/v1/dashboard/content/pages/${PAGE_ID}/insert-section?confirm_token=${CONFIRM_TOKEN}" \
     -H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json" \
     -d "{\"component_slug\":\"spideriq/auth-login\",\"props\":${PROPS},\"position\":\"end\"}" >/dev/null
   echo "   ✓ inserted"
