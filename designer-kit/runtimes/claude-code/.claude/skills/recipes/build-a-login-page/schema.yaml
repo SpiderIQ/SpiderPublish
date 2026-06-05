@@ -1,0 +1,100 @@
+name: build-a-login-page
+tier: 2
+description: >
+  Add a sign-in / forgot-password / reset-password page using the designable
+  Authentication components (spideriq/auth-login, auth-forgot-password,
+  auth-reset-password). Each renders a single <spideriq-auth> element with a
+  CLOSED shadow DOM. The REQUIRED auth_target prop selects the identity system
+  (dashboard = the SpiderIQ dashboard; site_members = the site's own members).
+  Designable shell + contract — the sign-in backends ship in a follow-up.
+
+inputs:
+  auth_target:
+    type: string
+    required: true
+    hint: >
+      'dashboard' (sign into the SpiderIQ dashboard) or 'site_members' (sign
+      into the site's own members area). REQUIRED — ask the user before
+      inserting; the two never share a user store and can't be swapped.
+  page_slug:
+    type: string
+    default: "login"
+    hint: "Slug for the login page (e.g. 'login')."
+  methods:
+    type: array
+    default: ["email_password"]
+    hint: "Sign-in methods: email_password | google | github | magic_link."
+  theme:
+    type: object
+    required: false
+    hint: "CSS-var overrides applied INSIDE the closed shadow root: primary_color, bg, text, button_radius, font."
+
+steps:
+  - id: discover
+    description: List the 3 auth components + their props_schema.
+    tool: content_list_marketplace_components
+    args:
+      category: authentication
+    output: components
+
+  - id: create_page
+    description: Create the login page.
+    tool: content_create_page
+    args:
+      slug: "{{ inputs.page_slug }}"
+      title: "Sign in"
+    output: page
+
+  - id: insert_login
+    description: >
+      Insert spideriq/auth-login. auth_target is REQUIRED. If your surface
+      enforces the dry_run → confirm_token flow, preview first then confirm.
+    tool: page_insert_section
+    args:
+      page_id: "{{ page.id }}"
+      component_slug: "spideriq/auth-login"
+      props:
+        auth_target: "{{ inputs.auth_target }}"
+        api_base: "{{ 'https://spideriq.ai' if inputs.auth_target == 'dashboard' else null }}"
+        methods: "{{ inputs.methods }}"
+        signup_enabled: true
+        forgot_link: "/forgot-password"
+        theme: "{{ inputs.theme }}"
+      position: "end"
+    output: insertion
+
+  - id: publish_deploy
+    description: Publish the page, then deploy the site (dry_run → confirm_token → deploy).
+    tool: content_publish_page
+    args:
+      id: "{{ page.id }}"
+
+  - id: verify
+    description: >
+      Visual-check the published /login URL. PASS only when dom.shadow_hosts
+      includes 'spideriq-auth'. NEVER assert on body_text_preview — the closed
+      shadow root is opaque.
+    tool: content_visual_check
+    args:
+      page_url: "https://<site>/{{ inputs.page_slug }}"
+    output: visual
+
+outputs:
+  page_id: "{{ page.id }}"
+  block_id: "{{ insertion.new_block_id }}"
+  shadow_host_ok: "{{ 'spideriq-auth' in visual.dom.shadow_hosts }}"
+
+notes: |
+  - auth_target is REQUIRED on EVERY auth component — login, forgot-password,
+    and reset-password all take it. There is no safe default.
+  - Add /forgot-password (spideriq/auth-forgot-password) and /reset-password
+    (spideriq/auth-reset-password) the same way; wire login_link / forgot_link
+    between the pages as page refs.
+  - <spideriq-auth> uses a CLOSED shadow DOM by design — the password field is
+    not readable from the host page. Verify via dom.shadow_hosts, never
+    body_text_preview.
+  - For auth_target=dashboard, google/github ALWAYS redirect to the central
+    SpiderIQ origin for the OAuth dance — never initiate OAuth on the site domain.
+  - This is the designable shell + integration contract. Until the sign-in
+    backends ship, submit degrades gracefully ("Sign-in isn't configured for
+    this site yet"). Expected, not a bug.

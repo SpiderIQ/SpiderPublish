@@ -652,6 +652,28 @@ Ready-to-POST examples in `components/`:
 - `stats-animated.json` — Tier 3: GSAP animated stats counter
 - `pricing-toggle.json` — Tier 4: React pricing with monthly/annual toggle
 - `scroll-sequence.json` — **reference**: page-block config for the global `sys-scroll-sequence` component (not a create body — feed it from `extract_frames`)
+- `auth-login.json` — **reference**: page-block config for the global `spideriq/auth-login` component (Authentication category — see below)
+
+---
+
+### Authentication components (login / forgot-password / reset-password)
+
+The **`authentication`** marketplace category provides three designable sign-in bricks — `spideriq/auth-login`, `spideriq/auth-forgot-password`, `spideriq/auth-reset-password` — each rendering ONE `<spideriq-auth>` custom element with a **closed** shadow DOM (the password field is never readable from the host page).
+
+Discover them with `content_list_marketplace_components(category="authentication")` (CLI: `spideriq content marketplace:components --category authentication`), then insert one with `page_insert_section`.
+
+**The hinge — `auth_target` (REQUIRED on every auth component):**
+
+| `auth_target` | Signs into |
+|---|---|
+| `dashboard` | the SpiderIQ dashboard |
+| `site_members` | the site's **own** members area |
+
+The two never share a user store or session — ask the user which one before inserting. Verify a placed form by checking the page's `dom.shadow_hosts` include `spideriq-auth` (NEVER assert on `body_text_preview` — the closed shadow root is opaque).
+
+> **Status:** designable shell + integration contract. The sign-in backends ship in a follow-up; until then a placed form renders and themes but degrades gracefully on submit (*"Sign-in isn't configured for this site yet"*). Expected, not a bug.
+
+Full flow: [recipes/build-a-login-page/](../recipes/build-a-login-page/) • [examples/build-login-page.sh](../examples/build-login-page.sh) • [components/auth-login.json](../components/auth-login.json).
 
 ---
 
