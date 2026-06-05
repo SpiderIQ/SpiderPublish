@@ -1,0 +1,47 @@
+{
+  "_description": "Reference: a designable login brick from the Authentication marketplace category. Renders ONE <spideriq-auth> custom element with a CLOSED shadow DOM (the password field is never readable from the host page). Pair it with auth-forgot-password and auth-reset-password for the full flow. NOTE: this is the page-block config you POST when inserting the component into a page — NOT a component-create body (the 3 auth components are global, already in the marketplace under category=authentication).",
+  "_category": "authentication",
+  "_components": [
+    "spideriq/auth-login",
+    "spideriq/auth-forgot-password",
+    "spideriq/auth-reset-password"
+  ],
+  "_status": "Designable shell + integration contract. The sign-in backends ship in a follow-up; until then a placed form renders and themes but degrades gracefully on submit ('Sign-in isn't configured for this site yet'). Expected, not a bug.",
+
+  "id": "b-auth-login-1",
+  "type": "component",
+  "component_slug": "spideriq/auth-login",
+  "props": {
+    "auth_target": "dashboard",
+    "api_base": "https://spideriq.ai",
+    "methods": ["email_password", "google"],
+    "signup_enabled": true,
+    "forgot_link": "/forgot-password",
+    "redirect_after": "/dashboard",
+    "theme": { "primary_color": "#6d28d9", "button_radius": "8px" }
+  },
+
+  "_required_prop": {
+    "auth_target": {
+      "values": ["dashboard", "site_members"],
+      "description": "REQUIRED on every auth component. Picks the identity system. 'dashboard' = sign into the SpiderIQ dashboard. 'site_members' = sign into the site's own members area. The two never share a user store or session, so decide before you insert — it can't be swapped after sign-in."
+    }
+  },
+
+  "_other_props": {
+    "api_base": "SpiderIQ API base (default https://spideriq.ai). Used when auth_target=dashboard.",
+    "members_base": "Per-site members origin. Used when auth_target=site_members.",
+    "methods": "Array of sign-in methods: email_password | google | github | magic_link.",
+    "theme": "CSS-variable overrides applied INSIDE the closed shadow root: primary_color, bg, text, button_radius, font.",
+    "signup_enabled": "Show a 'Create account' link (login only).",
+    "forgot_link": "Page ref / URL to the forgot-password page (login only).",
+    "redirect_after": "Page ref / URL to send the user to after a successful login (login only)."
+  },
+
+  "_anti_patterns": [
+    "Do NOT omit auth_target — it is REQUIRED; the component cannot guess which identity system to use.",
+    "Do NOT assert on the visible field labels or button text to verify the form rendered — <spideriq-auth> uses a CLOSED shadow DOM, so the host page can't read inside it. Verify by checking the page's shadow_hosts include 'spideriq-auth'.",
+    "Do NOT initiate OAuth on the site's own domain when auth_target=dashboard — google/github always redirect to the central SpiderIQ origin for the OAuth dance.",
+    "Do NOT expect end-to-end sign-in yet — this release is the designable shell; submit degrades gracefully until the backends ship."
+  ]
+}

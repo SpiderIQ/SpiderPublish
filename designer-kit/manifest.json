@@ -209,6 +209,13 @@
       "ki_index": 24,
       "title": "Fill the CRM from a Form — IDAP Field Types + crm_target",
       "summary": "Make a Form populate the tenant CRM on submit. Wire each form field to a typed norm_cli_<tenant>.<resource_type>.<column> via crm_target, and use the 8 IDAP-anchored field types (url / country / region / postal_code / address / datetime / currency / place) so the value is structurally compatible with the column. Includes the field-type ↔ column compatibility matrix and the server-proxy behaviour of the place field (graceful fallback to free text when GOOGLE_PLACES_API_KEY is not provisioned). Use whenever the user asks for 'forms that fill the CRM', 'lead form with structured CRM fields', 'address picker on a form', 'Google Places form field', 'country picker', 'currency form field'."
+    },
+    {
+      "id": "build-a-login-page",
+      "kind": "recipe",
+      "ki_index": 25,
+      "title": "Build a Login Page — Authentication Components + auth_target",
+      "summary": "Add a sign-in / forgot-password / reset-password page using the designable Authentication components (spideriq/auth-login, auth-forgot-password, auth-reset-password). Each renders a single <spideriq-auth> custom element with a CLOSED shadow DOM. The REQUIRED auth_target prop picks the identity system — 'dashboard' (sign into the SpiderIQ dashboard) or 'site_members' (sign into the site's own members). Discover via content_list_marketplace_components(category=authentication), insert with page_insert_section, verify via dom.shadow_hosts. Use whenever the user asks for 'a login page', 'a sign-in form', 'a forgot password page', or 'a reset password page'. Designable shell + contract — the sign-in backends ship in a follow-up."
     }
   ]
 }
