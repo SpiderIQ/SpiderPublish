@@ -671,7 +671,7 @@ Discover them with `content_list_marketplace_components(category="authentication
 
 The two never share a user store or session — ask the user which one before inserting. Verify a placed form by checking the page's `dom.shadow_hosts` include `spideriq-auth` (NEVER assert on `body_text_preview` — the closed shadow root is opaque).
 
-> **Status:** designable shell + integration contract. The sign-in backends ship in a follow-up; until then a placed form renders and themes but degrades gracefully on submit (*"Sign-in isn't configured for this site yet"*). Expected, not a bug.
+> **Status:** live end to end. `auth_target=dashboard` signs into the SpiderIQ dashboard (one-time code → host-only handoff → first-party session; no shared cross-domain cookies); `auth_target=site_members` signs into the site's own members. A placed brick renders, themes, *and* signs in. Design the page freely and embed the brick where the form goes — don't hand-roll a custom auth form.
 
 Full flow: [recipes/build-a-login-page/](../recipes/build-a-login-page/) • [examples/build-login-page.sh](../examples/build-login-page.sh) • [components/auth-login.json](../components/auth-login.json).
 

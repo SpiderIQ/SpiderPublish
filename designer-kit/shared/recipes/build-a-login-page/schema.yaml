@@ -6,7 +6,7 @@ description: >
   auth-reset-password). Each renders a single <spideriq-auth> element with a
   CLOSED shadow DOM. The REQUIRED auth_target prop selects the identity system
   (dashboard = the SpiderIQ dashboard; site_members = the site's own members).
-  Designable shell + contract — the sign-in backends ship in a follow-up.
+  Sign-in is functional end to end — a placed brick renders, themes, AND signs in.
 
 inputs:
   auth_target:
@@ -95,6 +95,6 @@ notes: |
     body_text_preview.
   - For auth_target=dashboard, google/github ALWAYS redirect to the central
     SpiderIQ origin for the OAuth dance — never initiate OAuth on the site domain.
-  - This is the designable shell + integration contract. Until the sign-in
-    backends ship, submit degrades gracefully ("Sign-in isn't configured for
-    this site yet"). Expected, not a bug.
+  - Sign-in is functional end to end. Don't hand-roll a custom auth form —
+    embed the <spideriq-auth> brick into your own page design; only the form
+    interior is themed via theme tokens.

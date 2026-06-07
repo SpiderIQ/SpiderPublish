@@ -18,10 +18,10 @@
 #   site_members  → sign into this site's OWN members area
 # The two identity worlds never share a user store; pick one before inserting.
 #
-# STATUS: this is the designable shell + integration contract. The sign-in
-# backends ship in a follow-up; until then a placed form renders and themes but
-# degrades gracefully on submit ("Sign-in isn't configured for this site yet").
-# That is expected, not a bug.
+# STATUS: sign-in is functional end to end. With auth_target=dashboard a placed
+# brick signs the user into the SpiderIQ dashboard (one-time code -> host-only
+# handoff -> first-party session); with site_members it signs into this site's
+# own members. Design the page freely and embed the brick where the form goes.
 #
 # Pairs with: recipes/build-a-login-page/  •  components/auth-login.json
 #
