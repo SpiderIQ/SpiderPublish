@@ -62,6 +62,11 @@ npx @spideriq/cli content deploy
 npx @spideriq/cli marketplace search --kind static --mood bold
 npx @spideriq/cli marketplace insert <component_slug> --page <page_id>
 
+# Media catalog (read your hosted assets — image / video / doc, across all storage tiers)
+npx @spideriq/cli media list --kind image --limit 20
+npx @spideriq/cli media search "hero" --tags campaign
+npx @spideriq/cli media get <asset_id>
+
 # Output formats (token-efficient for agent loops)
 npx @spideriq/cli content pages list --format yaml
 npx @spideriq/cli content pages list --format md
@@ -93,9 +98,10 @@ The default for site-building. 87 atomic tools, content + extension scope only. 
 | Variant | Tools | Scope | When to load |
 |---|---|---|---|
 | `@spideriq/mcp-publish@1.7.0` | 87 | content + extension only | **Default for site-building.** Under the ~128-tool injection limit some IDE/LLM stacks enforce. Less context burn per turn. |
+| `@spideriq/mcp-media@1.0.0` | 3 | media-catalog read only | **Focused.** Just `catalog_list_assets` / `catalog_get_asset` / `catalog_search_assets` over your hosted media. Tiny footprint — load alongside `mcp-publish` when an agent needs to browse the media library without the kitchen sink. |
 | `@spideriq/mcp@1.7.0` | 126 | publish + booking + leads + mail + gate + admin | Cross-domain agent that needs every slice in one prompt. Can be dropped silently above ~128 tools by some stacks. |
 
-**Anti-pattern:** never load both `@spideriq/mcp` and `@spideriq/mcp-publish` in the same project. Duplicate tool registration breaks discovery in most IDE/MCP integrations.
+**Anti-pattern:** never load both `@spideriq/mcp` and `@spideriq/mcp-publish` in the same project. Duplicate tool registration breaks discovery in most IDE/MCP integrations. (`@spideriq/mcp-media` is the exception — it's a 3-tool read-only package with no overlap, safe to add next to `mcp-publish`.)
 
 **Tool catalog:** see [AGENTS.md](./AGENTS.md). Marketplace V2 deep dive: [skills/recipes/marketplace-search-and-insert/](./skills/recipes/marketplace-search-and-insert/).
 

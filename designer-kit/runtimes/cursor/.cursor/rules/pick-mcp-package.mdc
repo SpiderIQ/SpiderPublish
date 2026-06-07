@@ -24,6 +24,21 @@ The kit's [`.mcp.json`](../../../.mcp.json) already pins this. If the user copie
 
 That kind of cross-domain agent needs the kitchen sink. A focused site-builder agent doesn't.
 
+## Focused add-on: `@spideriq/mcp-media`
+
+`@spideriq/mcp-media@1.0.0` is a **3-tool, read-only** package over the media catalog: `catalog_list_assets`, `catalog_get_asset`, `catalog_search_assets`. It lists / searches / fetches any image, video, or doc the tenant has hosted, across every storage tier (R2 / SeaweedFS / PeerTube), with `format: yaml|md` for token-efficient responses.
+
+Because it's tiny and has **no tool-name overlap** with `mcp-publish`, it's the one package you *can* safely load alongside the default — add it when an agent needs to browse the media library but you don't want the kitchen sink. (Writes — upload, video import — still live in `mcp-publish`'s `upload_*` / `media_*` tools.)
+
+```jsonc
+{
+  "mcpServers": {
+    "spideriq":       { "command": "npx", "args": ["-y", "@spideriq/mcp-publish@latest"], "env": { "SPIDERIQ_FORMAT": "yaml" } },
+    "spideriq-media": { "command": "npx", "args": ["-y", "@spideriq/mcp-media@latest"],   "env": { "SPIDERIQ_FORMAT": "yaml" } }
+  }
+}
+```
+
 ## Why mcp-publish is preferred when possible
 
 1. **~128-tool injection limit.** Some IDE/LLM stacks (notably some older Cursor builds, some Antigravity configurations) silently drop tool injections above ~128. The kitchen-sink at 126 tools is right at the edge — adding any other MCP server pushes over.
@@ -37,11 +52,11 @@ Run this checklist:
 1. Confirm `.mcp.json` is at the project root and references the right package
 2. Restart the IDE / Claude Code session — MCP servers load on startup
 3. Run `auth_whoami` to confirm the MCP server is reachable
-4. If `whoami` works but a specific tool is "missing": check the package — `mcp-publish` doesn't expose `lead_*`, `mail_*`, `gate_*`, or `admin_*` tools. Switch to `mcp` or load a separate package only if needed.
+4. If `whoami` works but a specific tool is "missing": check the package — `mcp-publish` doesn't expose `lead_*`, `mail_*`, `gate_*`, `admin_*`, or `catalog_*` tools. Switch to `mcp`, or load a focused package (`@spideriq/mcp-media` for `catalog_*`) only if needed.
 
 ## Anti-patterns
 
-- **Loading both `@spideriq/mcp` and `@spideriq/mcp-publish` in the same project.** Duplicate tool registration breaks discovery in most IDE/MCP integrations. The agent picks one randomly per turn.
+- **Loading both `@spideriq/mcp` and `@spideriq/mcp-publish` in the same project.** Duplicate tool registration breaks discovery in most IDE/MCP integrations. The agent picks one randomly per turn. (Exception: `@spideriq/mcp-media` is a 3-tool read-only package with no overlap — safe to add next to `mcp-publish`.)
 - **Pinning `latest` without version-locking.** The kit pins `@spideriq/mcp-publish@latest` via `npx` in `.mcp.json` — that's intentional for the public kit (always-fresh). For production agency setups, pin a specific version (e.g. `@spideriq/mcp-publish@1.7.0`).
 - **Adding `@spideriq/mcp-mail` / `mcp-leads` / etc. just because they exist.** Each added MCP server stacks tool count and context burn. Only add what the agent actually needs.
 

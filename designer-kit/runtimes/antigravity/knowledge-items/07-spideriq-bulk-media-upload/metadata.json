@@ -2,7 +2,7 @@
   "title": "Upload a Local Directory of Files via Multipart POST",
   "summary": "Upload a local directory of files directly via multipart POST. Kills the pinggy/catbox/serveo tunnel workaround. Use whenever you need to push frame sequences, image sets, or asset bundles to SpiderMedia from your local disk.",
   "createdAt": "2026-05-08T00:00:00Z",
-  "updatedAt": "2026-05-18T07:10:33Z",
+  "updatedAt": "2026-06-07T06:17:18Z",
   "references": [
     "shared/recipes/bulk-media-upload/"
   ]

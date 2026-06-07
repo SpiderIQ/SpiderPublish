@@ -1,8 +1,8 @@
 # upload-host-media
 
-Upload and host files on the SpiderIQ CDN (Cloudflare R2, served via `media.cdn.spideriq.ai`). Also covers video import and processing status.
+Upload and host files on the SpiderIQ CDN (Cloudflare R2, served via `media.cdn.spideriq.ai`). Also covers video import and processing status — and reading your hosted media back through the **media catalog**.
 
-**Exposed via:** `@spideriq/mcp-publish`. Tool namespace: `upload_*`, `media_*`.
+**Exposed via:** `@spideriq/mcp-publish` (`upload_*`, `media_*`) for writes; `@spideriq/mcp-media` (`catalog_*`) for the read-only catalog. CLI: `spideriq media list|get|search`.
 
 ## When to use
 
@@ -10,6 +10,7 @@ Upload and host files on the SpiderIQ CDN (Cloudflare R2, served via `media.cdn.
 - Importing a file from a public URL
 - Listing or deleting files the tenant has previously uploaded
 - Checking processing status of a video import
+- **Browsing the media catalog** — list / search / fetch any hosted asset (image, video, doc) across all storage tiers (read-only)
 
 ## When NOT to use
 
@@ -27,6 +28,11 @@ Upload and host files on the SpiderIQ CDN (Cloudflare R2, served via `media.cdn.
 | List tenant files | `list_files({folder?, limit?})` |
 | Delete a file | `delete_file({key})` |
 | Import a video + get status | `media_import_video` → poll `media_get_video_status` |
+| Browse the catalog | `catalog_list_assets({kind?, folder?, tags?, status?, storage_tier?, limit?, offset?})` — newest first |
+| Find an asset | `catalog_search_assets({q?, kind?, tags?, limit?})` — substring on key/folder + tag overlap (ANY) |
+| Fetch one asset | `catalog_get_asset({asset_id})` — by UUID, 404 if not yours |
+
+> The `catalog_*` tools are **read-only** and live in `@spideriq/mcp-media` (3-tool package, safe to load alongside `mcp-publish`). They span every storage tier (R2 / SeaweedFS / PeerTube) in one surface. REST equivalent: `GET /api/v1/media/catalog/{assets, assets/{id}, search}`, all supporting `?format=yaml|md`. See [examples/media-catalog-list.sh](../../examples/media-catalog-list.sh).
 
 ## Key rules
 
