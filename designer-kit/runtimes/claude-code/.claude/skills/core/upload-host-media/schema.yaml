@@ -2,8 +2,10 @@ name: upload-host-media
 version: "1.0.0"
 tier: 1
 description: >
-  Upload files, images, and videos to the SpiderIQ CDN (Cloudflare R2).
-  Reference catalog — JSON Schemas live in @spideriq/mcp-publish.
+  Upload files, images, and videos to the SpiderIQ CDN (Cloudflare R2),
+  then read your hosted media back via the media catalog.
+  Reference catalog — upload/video JSON Schemas live in @spideriq/mcp-publish;
+  the read-only catalog_* tools live in @spideriq/mcp-media.
 
 tools:
   upload:
@@ -17,6 +19,15 @@ tools:
   video:
     - media_import_video
     - media_get_video_status
+  catalog:                     # read-only — package @spideriq/mcp-media
+    - catalog_list_assets      # list every hosted asset (image/video/doc), newest first; filter kind/folder/tags/status/storage_tier
+    - catalog_get_asset        # fetch one asset by UUID (404 if not yours)
+    - catalog_search_assets    # substring on key/folder + tag overlap (ANY) + kind
+
+# The catalog spans every storage tier (seaweedfs / r2 / peertube) in one
+# normalized read surface. REST: GET /api/v1/media/catalog/{assets,assets/{id},search}.
+# Each catalog_* tool accepts format: yaml|md for token-efficient agent loops.
+catalog_package: "@spideriq/mcp-media"
 
 predictable_filename_routes:
   - upload_file

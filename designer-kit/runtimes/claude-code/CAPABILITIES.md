@@ -21,7 +21,7 @@
 | 7 | CRO tools (interactive class) | timer · exit-intent popup · social-proof toast · stock bar · sticky bar · pricing toggle · 21-card library | ✓ via `marketplace_search` |
 | 8 | GEO (W6+W7 extensions) | llms.txt · md-mirror · schema-injector · contextual-menu · human/agent toggle · sitemap · RSS · per-page index control (a page's `robots` field gates its inclusion in both `sitemap.xml` and `llms.txt`) | ✓ [GEO.md](./GEO.md), `components/extension-*.json` |
 | 9 | Scraping + enrichment (data foundation) | SpiderSite · SpiderMaps · SpiderPeople · SpiderVerify · SpiderPhone · SpiderBrowser · IDAP (~44k cities) | feeds personalization + directories; jobs trigger via dashboard |
-| 10 | Media services | upload / download / stream · R2-backed `media.cdn.spideriq.ai` · ffmpeg pipeline → scroll-sequence frames | ✓ [skills/upload-host-media/](./skills/upload-host-media/), [examples/bulk-media-upload.sh](./examples/bulk-media-upload.sh), [examples/scroll-sequence.sh](./examples/scroll-sequence.sh) |
+| 10 | Media services | upload / download / stream · R2-backed `media.cdn.spideriq.ai` · ffmpeg pipeline → scroll-sequence frames · **read catalog** (list / search / fetch every hosted asset across all storage tiers) | ✓ [skills/upload-host-media/](./skills/upload-host-media/), [examples/bulk-media-upload.sh](./examples/bulk-media-upload.sh), [examples/scroll-sequence.sh](./examples/scroll-sequence.sh), [examples/media-catalog-list.sh](./examples/media-catalog-list.sh) |
 | 11 | Agent surface (CLI / MCP / IDE extension / Skills) | four ways to drive the runtime; same engine, different rendering | ✓ [SURFACES.md](./SURFACES.md) |
 
 ---
@@ -58,6 +58,7 @@ Every published component is one of four kinds. The `kind` axis answers four que
 | Directory pages (programmatic SEO) | `directory_*` tool group | [skills/recipes/directory/](./skills/recipes/directory/), [examples/directory-bulk-import.sh](./examples/directory-bulk-import.sh) |
 | Booking (SpiderBook, cal.com-backed) | `booking_*` tool group + `{% booking %}` Liquid tag | [skills/booking/](./skills/booking/), [examples/booking-flow.sh](./examples/booking-flow.sh) |
 | Media upload + scroll-sequence frames | `media_upload`, `media_extract_frames` | [skills/upload-host-media/](./skills/upload-host-media/), [examples/bulk-media-upload.sh](./examples/bulk-media-upload.sh), [examples/scroll-sequence.sh](./examples/scroll-sequence.sh) |
+| Media catalog read (list / search / fetch hosted assets) | `@spideriq/mcp-media@1.0.0` (`catalog_list_assets` · `catalog_get_asset` · `catalog_search_assets`) + CLI `spideriq media list/get/search` | [skills/upload-host-media/](./skills/upload-host-media/), [examples/media-catalog-list.sh](./examples/media-catalog-list.sh) |
 | Tilda / Webflow / Lovable migration | `auto_extract_css` + Shadow-DOM wrap | [skills/recipes/tilda-migration/](./skills/recipes/tilda-migration/), [examples/tilda-migrate.sh](./examples/tilda-migrate.sh) |
 | Versioned docs (agentdocs) | `agentdocs_*` tool group | [skills/agentdocs/](./skills/agentdocs/) |
 | Link-audit (broken internal links pre-deploy) | `content_audit_links` | [skills/recipes/link-audit/](./skills/recipes/link-audit/), [examples/audit-links.sh](./examples/audit-links.sh) |
