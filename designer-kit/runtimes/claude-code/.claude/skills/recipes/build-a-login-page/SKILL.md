@@ -1,6 +1,6 @@
 ---
 name: build-a-login-page
-description: "Add a sign-in / forgot-password / reset-password page using the designable Authentication components (spideriq/auth-login, auth-forgot-password, auth-reset-password). Each renders a single <spideriq-auth> custom element with a CLOSED shadow DOM. The REQUIRED auth_target prop picks the identity system — 'dashboard' (sign into the SpiderIQ dashboard) or 'site_members' (sign into the site's own members). Discover via content_list_marketplace_components(category=authentication), insert with page_insert_section, verify via dom.shadow_hosts. Use whenever the user asks for 'a login page', 'a sign-in form', 'a forgot password page', or 'a reset password page'. Designable shell + contract — the sign-in backends ship in a follow-up."
+description: "Add a sign-in / forgot-password / reset-password page using the designable Authentication components (spideriq/auth-login, auth-forgot-password, auth-reset-password). Each renders a single <spideriq-auth> custom element with a CLOSED shadow DOM. The REQUIRED auth_target prop picks the identity system — 'dashboard' (sign into the SpiderIQ dashboard) or 'site_members' (sign into the site's own members). Discover via content_list_marketplace_components(category=authentication), insert with page_insert_section, verify via dom.shadow_hosts. Use whenever the user asks for 'a login page', 'a sign-in form', 'a forgot password page', or 'a reset password page'. Sign-in is functional end to end — a placed brick renders, themes, AND signs in (dashboard or site_members)."
 ---
 # recipes/build-a-login-page
 
@@ -63,15 +63,15 @@ npx spideriq content pages new --slug login --title "Sign in"
 # insert + publish + deploy via the content commands
 ```
 
-## Status — designable shell, backends rolling out
+## Status — live end to end
 
-This first release ships the **designable shell + the integration contract** — not working auth. Until the sign-in backends ship, a placed form renders and themes correctly but degrades gracefully on submit (*"Sign-in isn't configured for this site yet"*). That is expected, not a bug.
+Sign-in is **functional end to end**. With `auth_target=dashboard`, a login form on your own domain signs the user straight into the SpiderIQ dashboard (a credential check returns a single-use one-time code, which a host-only handoff trades for a first-party session — no shared cross-domain cookies). With `auth_target=site_members`, it signs into the site's own members area. Design the page however you like and embed the brick where the form goes — only the form interior is themed via `theme` tokens.
 
 ## Anti-patterns
 
 - **Omitting `auth_target`.** It is REQUIRED — the component cannot guess which identity system to use.
 - **Asserting on `body_text_preview` to verify the form rendered.** `<spideriq-auth>` uses a **closed** shadow DOM, so the host page can't read inside it. Assert on `dom.shadow_hosts` including `spideriq-auth` instead.
 - **Initiating OAuth on the site's own domain when `auth_target=dashboard`.** `google` / `github` always redirect to the central SpiderIQ origin for the OAuth dance.
-- **Expecting end-to-end sign-in today.** It degrades gracefully until the backends ship.
+- **Hand-rolling your own auth form.** Don't — embed the `<spideriq-auth>` brick into your design instead. It keeps the password in a closed shadow root and wires the secure sign-in flow for you; a custom form silently won't authenticate.
 
 Pairs with: `examples/build-login-page.sh` • `components/auth-login.json`

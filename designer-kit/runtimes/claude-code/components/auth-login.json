@@ -6,7 +6,7 @@
     "spideriq/auth-forgot-password",
     "spideriq/auth-reset-password"
   ],
-  "_status": "Designable shell + integration contract. The sign-in backends ship in a follow-up; until then a placed form renders and themes but degrades gracefully on submit ('Sign-in isn't configured for this site yet'). Expected, not a bug.",
+  "_status": "Live end to end. auth_target=dashboard signs into the SpiderIQ dashboard (one-time code -> host-only handoff -> first-party session; no shared cross-domain cookies); auth_target=site_members signs into the site's own members. A placed brick renders, themes, AND signs in.",
 
   "id": "b-auth-login-1",
   "type": "component",
@@ -42,6 +42,6 @@
     "Do NOT omit auth_target — it is REQUIRED; the component cannot guess which identity system to use.",
     "Do NOT assert on the visible field labels or button text to verify the form rendered — <spideriq-auth> uses a CLOSED shadow DOM, so the host page can't read inside it. Verify by checking the page's shadow_hosts include 'spideriq-auth'.",
     "Do NOT initiate OAuth on the site's own domain when auth_target=dashboard — google/github always redirect to the central SpiderIQ origin for the OAuth dance.",
-    "Do NOT expect end-to-end sign-in yet — this release is the designable shell; submit degrades gracefully until the backends ship."
+    "Do NOT hand-roll a custom auth form — embed the <spideriq-auth> brick into your own page design; it keeps the password in a closed shadow root and wires the secure sign-in flow. Only the form interior is themed via theme tokens."
   ]
 }
