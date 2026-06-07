@@ -142,6 +142,33 @@ content_set_post_related(post_id, related_ids=[id1, id2, id3])
 content_search_posts(query, limit?)
 ```
 
+**Docs full-text search (REST, live now).** Published docs are full-text searchable with
+highlighted snippets via a public endpoint. Call it on the **platform host** with your docs
+domain in the `X-Content-Domain` header (the tenant-domain path 404s for `/docs/*`, same as
+`/docs/tree`):
+
+```bash
+curl "https://spideriq.ai/api/v1/content/docs/search?q=quickstart" \
+  -H "X-Content-Domain: <your-docs-domain>"
+# → [{ title, full_path, section_title, snippet }]  (snippet has <mark> highlights)
+```
+
+See [`examples/docs-search.sh`](../../examples/docs-search.sh). Keyword docs search is free.
+
+**Docs reader feedback (REST, live now).** Published docs show a "Was this helpful?" widget
+that records reader votes:
+
+```bash
+curl -X POST "https://spideriq.ai/api/v1/content/docs/feedback" \
+  -H "X-Content-Domain: <your-docs-domain>" -H "Content-Type: application/json" \
+  -d '{"doc_path":"/getting-started","helpful":true,"comment":"clear!"}'
+```
+
+> Docs also support the **full SEO field set** (OpenGraph, canonical, robots, structured data) —
+> identical to pages — and the renderer now emits them. Agent CLI/MCP tools for the full doc
+> lifecycle (create → edit → publish → export) ship in an upcoming package release; until then,
+> drive docs via the REST endpoints above + the dashboard doc editor's SEO drawer.
+
 ### Blog-specific rules
 
 1. Post `body` is Tiptap JSON — not HTML, not Markdown. The Liquid renderer converts at request time via the `tiptap_html` filter.
