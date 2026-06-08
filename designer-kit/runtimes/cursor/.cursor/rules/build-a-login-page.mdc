@@ -67,6 +67,16 @@ npx spideriq content pages new --slug login --title "Sign in"
 
 Sign-in is **functional end to end**. With `auth_target=dashboard`, a login form on your own domain signs the user straight into the SpiderIQ dashboard (a credential check returns a single-use one-time code, which a host-only handoff trades for a first-party session — no shared cross-domain cookies). With `auth_target=site_members`, it signs into the site's own members area. Design the page however you like and embed the brick where the form goes — only the form interior is themed via `theme` tokens.
 
+## Self-serve signup — `mode="signup"`
+
+The same brick does **signup**. Insert `spideriq/auth-login` with `mode="signup"` + `auth_target="dashboard"` on a `/signup` page and a visitor creates a **brand-new free SpiderIQ account from your own domain** — email + password, then a verification email. The account lands in **its own fresh workspace** (not yours — your domain is just the entry point), on the free tier, no charge at signup.
+
+- **No session is minted at signup.** On submit the brick shows a neutral *"Check your email…"* state and does **not** navigate or set a cookie. The dashboard session exists only after the visitor clicks the verification link (`→ /login?verified=1`) and logs in — don't expect a redirect.
+- Set `login_link="/login"` for the "Already have an account? Sign in" affordance; on the login brick set `signup_link="/signup"` to turn the "Create one" link real.
+- Duplicate email → same neutral response (no enumeration, no second account).
+
+Full walk: `examples/build-signup-page.sh`.
+
 ## Anti-patterns
 
 - **Omitting `auth_target`.** It is REQUIRED — the component cannot guess which identity system to use.
@@ -74,4 +84,4 @@ Sign-in is **functional end to end**. With `auth_target=dashboard`, a login form
 - **Initiating OAuth on the site's own domain when `auth_target=dashboard`.** `google` / `github` always redirect to the central SpiderIQ origin for the OAuth dance.
 - **Hand-rolling your own auth form.** Don't — embed the `<spideriq-auth>` brick into your design instead. It keeps the password in a closed shadow root and wires the secure sign-in flow for you; a custom form silently won't authenticate.
 
-Pairs with: `examples/build-login-page.sh` • `components/auth-login.json`
+Pairs with: `examples/build-login-page.sh` • `examples/build-signup-page.sh` • `components/auth-login.json`

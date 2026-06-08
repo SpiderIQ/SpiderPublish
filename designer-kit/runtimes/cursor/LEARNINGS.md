@@ -2,6 +2,15 @@
 
 Things that cause silent failures or broken deploys. Read before building.
 
+## Jun 2026 — Signup (`<spideriq-auth mode="signup">`) mints NO session — don't expect a redirect or cookie (Self-serve signup, 2026-06-08)
+
+When you embed the Authentication brick in `mode="signup"` (`auth_target=dashboard`), submitting the form does **not** sign the visitor in. There is **no session and no cookie at signup** — by design. On submit the brick shows a neutral *"Check your email…"* state and stays on the page. The dashboard session only exists **after** the visitor clicks the verification link in the email (`→ /login?verified=1`) and then logs in.
+
+- **Don't wire a "post-signup redirect" expecting a logged-in dashboard.** There's nothing to redirect to yet — email verification gates the first authed session. Set `login_link="/login"` instead so the brick offers "Already have an account? Sign in".
+- The account that gets created lands in **its own fresh free-tier workspace**, not the workspace of the site the visitor signed up from (your domain is only the entry point).
+- **Duplicate-email is silent on purpose** — re-submitting an existing email returns the same neutral "Check your email" response (anti-enumeration); it does **not** error and does **not** create a second account.
+- Verify the rendered form by asserting `dom.shadow_hosts` includes `spideriq-auth` — NOT `body_text_preview` (closed shadow root is opaque), same as login.
+
 ## Jun 2026 — A `noindex` page is absent from `sitemap.xml` AND `llms.txt` — that's expected (Per-page indexing control, 2026-06-04)
 
 Every page has a `robots` field (default `index,follow`). Setting it to a `noindex` value (e.g. `noindex,follow`) now removes the page from **both** the site's `sitemap.xml` and its `llms.txt` — so neither search engines nor AI crawlers are pointed at it. If a published page is missing from those files, **check its `robots` first — it's a setting, not a bug.**
