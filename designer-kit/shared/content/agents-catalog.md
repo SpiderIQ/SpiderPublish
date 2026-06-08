@@ -656,9 +656,9 @@ Ready-to-POST examples in `components/`:
 
 ---
 
-### Authentication components (login / forgot-password / reset-password)
+### Authentication components (login / signup / forgot-password / reset-password)
 
-The **`authentication`** marketplace category provides three designable sign-in bricks — `spideriq/auth-login`, `spideriq/auth-forgot-password`, `spideriq/auth-reset-password` — each rendering ONE `<spideriq-auth>` custom element with a **closed** shadow DOM (the password field is never readable from the host page).
+The **`authentication`** marketplace category provides designable sign-in bricks — `spideriq/auth-login`, `spideriq/auth-forgot-password`, `spideriq/auth-reset-password` — each rendering ONE `<spideriq-auth>` custom element with a **closed** shadow DOM (the password field is never readable from the host page). The same brick also supports **`mode="signup"`** for self-serve account creation.
 
 Discover them with `content_list_marketplace_components(category="authentication")` (CLI: `spideriq content marketplace:components --category authentication`), then insert one with `page_insert_section`.
 
@@ -673,7 +673,15 @@ The two never share a user store or session — ask the user which one before in
 
 > **Status:** live end to end. `auth_target=dashboard` signs into the SpiderIQ dashboard (one-time code → host-only handoff → first-party session; no shared cross-domain cookies); `auth_target=site_members` signs into the site's own members. A placed brick renders, themes, *and* signs in. Design the page freely and embed the brick where the form goes — don't hand-roll a custom auth form.
 
-Full flow: [recipes/build-a-login-page/](../recipes/build-a-login-page/) • [examples/build-login-page.sh](../examples/build-login-page.sh) • [components/auth-login.json](../components/auth-login.json).
+**Self-serve signup — `mode="signup"` (`auth_target=dashboard`):**
+
+Embed `<spideriq-auth mode="signup" auth-target="dashboard">` on a `/signup` page and a visitor can create a **brand-new free SpiderIQ account from your own domain** — email + password, then a verification email. The account lands in **its own fresh workspace** (not yours — your domain is just the entry point), on the free tier, with **no charge at signup**.
+
+- **No session is minted at signup.** On submit the brick shows a neutral *"Check your email…"* state and does **not** navigate or set a cookie — don't expect a redirect. The dashboard session exists only after the visitor clicks the verification link (`→ /login?verified=1`) and logs in.
+- Set `login-link="/login"` for the "Already have an account? Sign in" affordance; on the login brick, set `signup-link="/signup"` to turn the "Create one" link real.
+- Duplicate email returns the same neutral response — no enumeration, no second account.
+
+Full flow: [recipes/build-a-login-page/](../recipes/build-a-login-page/) • [examples/build-login-page.sh](../examples/build-login-page.sh) • [examples/build-signup-page.sh](../examples/build-signup-page.sh) • [components/auth-login.json](../components/auth-login.json).
 
 ---
 
