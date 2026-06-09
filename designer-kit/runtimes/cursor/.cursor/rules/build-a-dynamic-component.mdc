@@ -1,0 +1,67 @@
+---
+description: "Build a kind='dynamic' component that binds a live CMS collection (posts / authors / categories / tags / changelog) with server-side filtering, then place it on a page and deploy. Discover sources via list_data_sources, preview rows via list_data_source_items, create with kind=dynamic + block_type + js_runtime + sources (all required, else 422), insert with page_insert_section (rows render as `items`), deploy. Use whenever the user asks to 'show recent posts', 'list the authors on a page', 'add a changelog feed', 'a filtered card grid', or any 'live / dynamic / data-driven component / section' request."
+alwaysApply: false
+---
+# recipes/build-a-dynamic-component
+
+Build a reusable component that renders **live, server-filtered CMS data** — "latest 3 posts tagged news," "every author as a card," "a changelog feed." Shipped 2026-06-09 (Live Data Everywhere).
+
+A `kind="dynamic"` component declares one or more **sources** (collections). The renderer fetches + filters them server-side before render and exposes the rows to your Liquid template as `items`. Build it once, drop it on any page, and it always shows current content.
+
+## Quick ask: "show the latest 3 news posts on the homepage"
+
+```
+# 1. Discover sources + their filterable/sortable fields
+list_data_sources()
+# → [{ id: "posts", is_collection: true, fields: [{id:"tag",filterable:true}, {id:"published_at",sortable:true}, ...] }, ...]
+
+# 2. (optional) Preview the exact rows before wiring anything
+list_data_source_items(source_id="posts", filter={ tag: "news" }, sort="-published_at", limit=3)
+# → { items: [{slug, title, excerpt, published_at, ...}], total, source_id: "posts" }
+
+# 3. Create the component as kind=dynamic — block_type + js_runtime + sources are ALL required
+content_create_component(
+  slug = "latest-news",
+  name = "Latest News",
+  kind = "dynamic",
+  block_type = "list",
+  js_runtime = "none",
+  sources = [{ source_id: "posts",
+               default_filter: { tag: "news" },
+               default_sort: "-published_at",
+               default_limit: 3 }],
+  html_template = "{% for item in items %}<a href=\"/blog/{{ item.slug }}\">{{ item.title }}</a>{% endfor %}"
+)
+
+# 4. Place it on the homepage — the renderer fetches the binding, rows arrive as `items`
+page_insert_section(page_id = "<homepage uuid>", component_slug = "latest-news")
+
+# 5. Deploy (preview → confirm)
+content_deploy_site_preview()
+content_deploy_site_production(confirm_token = "<from preview>")
+```
+
+## The collections
+
+These live collections are bindable as a source AND available as globals (`{{ posts }}`, `{{ authors }}`, …) in every component and page template:
+
+- `posts` — published blog posts (slug, title, excerpt, cover_image_url, published_at, author, tags, reading_time, view_count, is_featured)
+- `authors` — active authors (slug, full_name, avatar_url, bio, role)
+- `categories` — post categories, hierarchical (slug, name, parent_id, children)
+- `tags` — post tags (slug, name, post_count)
+- `changelog` — published changelog entries (version, title, body, published_at)
+
+`items` is your declared, filtered binding. The globals are unfiltered — use those for a simple list, `items` for the component's own binding.
+
+## Anti-patterns
+
+- **`kind="dynamic"` without all three** — `block_type` + `js_runtime` + a non-empty `sources[]` must be set together, or the create returns **422**. Use `js_runtime: "none"` for a pure-Liquid (server-rendered) component.
+- **Expecting a client-side `{% if %}` to narrow the query** — filters run **server-side** (`default_filter`, or the `list_data_source_items` `filter`). A template `{% if %}` only hides rows already fetched.
+- **Binding a singleton to a List** — the landing-page `lead` is a single record (`is_collection=false`); use it directly on a `/lp/` page, not as a list source.
+- **Reaching for directory data** — country / city / street / business sources aren't bindable yet (Phase 2). The blog collections above are live today.
+
+## See also
+
+- [recipes/marketplace-search-and-insert](../marketplace-search-and-insert/) — find a ready-made component by intent instead of building one
+- [recipes/component-update-and-propagate](../component-update-and-propagate/) — edit a shared component everywhere it's used
+- [skills/content-platform](../../content-platform/) — full tool catalog including `list_data_sources`, `list_data_source_items`, `content_create_component`

@@ -7,7 +7,10 @@
       "id": "claude-code",
       "label": "Claude Code (CLI / VSCode / JetBrains)",
       "root": "runtimes/claude-code",
-      "supports": ["mcp", "claude-skills"],
+      "supports": [
+        "mcp",
+        "claude-skills"
+      ],
       "main_doc": "CLAUDE.md",
       "skill_path": ".claude/skills/{id}/SKILL.md",
       "skill_format": "claude-skill"
@@ -16,7 +19,10 @@
       "id": "antigravity",
       "label": "Google Antigravity",
       "root": "runtimes/antigravity",
-      "supports": ["mcp", "antigravity-knowledge-items"],
+      "supports": [
+        "mcp",
+        "antigravity-knowledge-items"
+      ],
       "main_doc": "AGENTS.md",
       "skill_path": "knowledge-items/{ki_index:02d}-spideriq-{id}/artifacts/workflow.md",
       "skill_format": "antigravity-ki"
@@ -25,7 +31,10 @@
       "id": "cursor",
       "label": "Cursor",
       "root": "runtimes/cursor",
-      "supports": ["mcp", "cursor-rules"],
+      "supports": [
+        "mcp",
+        "cursor-rules"
+      ],
       "main_doc": "AGENTS.md",
       "skill_path": ".cursor/rules/{id}.mdc",
       "skill_format": "cursor-rule"
@@ -34,7 +43,9 @@
       "id": "claude-desktop",
       "label": "Claude Desktop",
       "root": "runtimes/claude-desktop",
-      "supports": ["mcp"],
+      "supports": [
+        "mcp"
+      ],
       "main_doc": "README.md",
       "skill_path": null,
       "skill_format": null
@@ -216,6 +227,13 @@
       "ki_index": 25,
       "title": "Build a Login Page — Authentication Components + auth_target",
       "summary": "Add a sign-in / forgot-password / reset-password page using the designable Authentication components (spideriq/auth-login, auth-forgot-password, auth-reset-password). Each renders a single <spideriq-auth> custom element with a CLOSED shadow DOM. The REQUIRED auth_target prop picks the identity system — 'dashboard' (sign into the SpiderIQ dashboard) or 'site_members' (sign into the site's own members). Discover via content_list_marketplace_components(category=authentication), insert with page_insert_section, verify via dom.shadow_hosts. Use whenever the user asks for 'a login page', 'a sign-in form', 'a forgot password page', or 'a reset password page'. Sign-in is functional end to end — a placed brick renders, themes, AND signs in (dashboard or site_members)."
+    },
+    {
+      "id": "build-a-dynamic-component",
+      "kind": "recipe",
+      "ki_index": 26,
+      "title": "Build a Dynamic Component — Live, Server-Filtered Collections",
+      "summary": "Build a kind='dynamic' component that binds a live CMS collection (posts / authors / categories / tags / changelog) with server-side filtering, then place it on a page and deploy. Discover sources via list_data_sources, preview rows via list_data_source_items, create with kind=dynamic + block_type + js_runtime + sources (all required, else 422), insert with page_insert_section (rows render as `items`), deploy. Use whenever the user asks to 'show recent posts', 'list the authors on a page', 'add a changelog feed', 'a filtered card grid', or any 'live / dynamic / data-driven component / section' request."
     }
   ]
 }

@@ -1,0 +1,98 @@
+name: build-a-dynamic-component
+tier: 2
+description: >
+  Build a kind='dynamic' component that binds a live CMS collection
+  (posts / authors / categories / tags / changelog) with server-side
+  filtering, then place it on a page and deploy. The renderer fetches +
+  filters the bound source and exposes the rows as `items`.
+
+inputs:
+  page_id:
+    type: string
+    required: true
+    hint: "UUID of the page to place the component on (content_list_pages to find it)."
+  source_id:
+    type: string
+    required: true
+    hint: "Collection to bind: posts | authors | categories | tags | changelog (list_data_sources to discover)."
+  block_type:
+    type: string
+    default: "list"
+    hint: "Render shape: list | item_details | table | chart | calendar | kanban | map | form."
+  filter:
+    type: object
+    required: false
+    hint: "Server-side equality filters, e.g. { tag: 'news', is_featured: true }."
+  sort:
+    type: string
+    required: false
+    hint: "Sort field; prefix '-' for descending, e.g. '-published_at'."
+  limit:
+    type: integer
+    required: false
+    hint: "Max rows to bind, e.g. 3."
+
+steps:
+  - id: discover
+    description: List sources + their filterable/sortable fields.
+    tool: list_data_sources
+    output: sources
+
+  - id: preview_rows
+    description: (Optional) Preview the exact rows the binding will return.
+    tool: list_data_source_items
+    args:
+      source_id: "{{ inputs.source_id }}"
+      filter: "{{ inputs.filter }}"
+      sort: "{{ inputs.sort }}"
+      limit: "{{ inputs.limit }}"
+    output: preview
+
+  - id: create
+    description: >
+      Create the dynamic component. kind=dynamic REQUIRES block_type +
+      js_runtime + a non-empty sources[] together (else 422). Use
+      js_runtime='none' for a pure-Liquid server-rendered component.
+    tool: content_create_component
+    args:
+      slug: "<your-slug>"
+      name: "<Your Name>"
+      kind: "dynamic"
+      block_type: "{{ inputs.block_type }}"
+      js_runtime: "none"
+      sources:
+        - source_id: "{{ inputs.source_id }}"
+          default_filter: "{{ inputs.filter }}"
+          default_sort: "{{ inputs.sort }}"
+          default_limit: "{{ inputs.limit }}"
+      html_template: "{% for item in items %}...{{ item.slug }}...{% endfor %}"
+    output: component
+
+  - id: place
+    description: Insert the component onto the page (rows render as `items`).
+    tool: page_insert_section
+    args:
+      page_id: "{{ inputs.page_id }}"
+      component_slug: "{{ component.slug }}"
+    output: insertion
+
+  - id: deploy
+    description: Preview then push to production.
+    tool: content_deploy_site_production
+    args:
+      confirm_token: "<from content_deploy_site_preview>"
+    output: deploy
+
+outputs:
+  component_slug: "{{ component.slug }}"
+  block_id: "{{ insertion.new_block_id }}"
+
+notes: |
+  - Filters are server-side — a client-side Liquid {% if %} only hides rows
+    already fetched, it does not re-query.
+  - The landing-page `lead` is a singleton (is_collection=false) — use it on a
+    /lp/ page, not as a list source.
+  - idap.* directory sources are Phase 2 (not bindable yet). The blog
+    collections (posts/authors/categories/tags/changelog) are live now.
+  - The global {{ posts }} / {{ authors }} / … collections are available in
+    every component regardless — use `items` for the declared binding.

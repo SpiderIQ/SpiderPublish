@@ -2,7 +2,7 @@
 
 > **Built from canonical sources in [shared/](../../shared/).** Edit shared content there, run `npm run build` to regenerate.
 
-This kit ships **25 pre-built Knowledge Items** under [knowledge-items/](./knowledge-items/) covering capability discovery, page creation, marketplace search, deploy, personalized landing, booking, scroll-sequence, GEO readability, MCP package picking, CLI reference, and IDE extension setup. Install with `bash install-knowledge-items.sh`.
+This kit ships **26 pre-built Knowledge Items** under [knowledge-items/](./knowledge-items/) covering capability discovery, page creation, marketplace search, deploy, personalized landing, booking, scroll-sequence, GEO readability, MCP package picking, CLI reference, and IDE extension setup. Install with `bash install-knowledge-items.sh`.
 
 # SpiderPublish — AGENTS.md
 
@@ -662,6 +662,37 @@ Ready-to-POST examples in `components/`:
 
 ---
 
+### Live data in components — `kind="dynamic"` (Live Data Everywhere)
+
+Components aren't limited to static markup. A **`kind="dynamic"`** component binds live CMS collections — `posts`, `authors`, `categories`, `tags`, `changelog` — and the server fetches + filters them **before render**, exposing the rows to your template as `items`. Build it once, drop it on any page, and it always shows current content. This is how an agent puts real data anywhere: recent posts on the homepage, the team on a contact page, a changelog feed in a footer, a filtered card grid.
+
+**The chain:**
+```
+1. list_data_sources                     → discover source IDs + each source's filterable/sortable fields
+2. list_data_source_items(source_id="posts", filter={tag:"news"}, sort="-published_at", limit=3)
+                                          → (optional) preview the exact rows before wiring anything
+3. content_create_component(             → a dynamic component MUST set all three: block_type + js_runtime + sources
+     slug:"latest-news", name:"Latest News",
+     kind:"dynamic", block_type:"list", js_runtime:"none",
+     sources:[{ source_id:"posts", default_filter:{tag:"news"},
+                default_sort:"-published_at", default_limit:3 }],
+     html_template:'{% for item in items %}<a href="/blog/{{ item.slug }}">{{ item.title }}</a>{% endfor %}')
+4. page_insert_section(page_id, component_slug:"latest-news")   → renderer fetches the binding, rows arrive as items
+5. content_deploy_site_preview → content_deploy_site_production(confirm_token)
+```
+
+`items` is your declared, filtered binding. The global `{{ posts }}` / `{{ authors }}` / `{{ categories }}` / `{{ tags }}` / `{{ changelog }}` collections are **also** available in every component and page template (unfiltered) — use those for a quick list, `items` for the component's own binding.
+
+**Pitfalls:**
+- `kind="dynamic"` **requires** `block_type` + `js_runtime` + a non-empty `sources[]` together — omit any and the create is rejected (422). Use `js_runtime:"none"` for a pure-Liquid (server-rendered) component.
+- **Filters run server-side.** `default_filter` (or the `list_data_source_items` `filter`) narrows the query; a `{% if %}` in your template only hides rows already fetched — it doesn't re-query.
+- The landing-page `lead` is a **singleton**, not a list — use it directly on a `/lp/` page, not as a list binding.
+- Directory sources (countries / cities / streets / businesses) aren't bindable yet; the blog collections above are live today.
+
+Full recipe: **[skills/recipes/build-a-dynamic-component/](skills/recipes/build-a-dynamic-component/)**
+
+---
+
 ### Authentication components (login / signup / forgot-password / reset-password)
 
 The **`authentication`** marketplace category provides designable sign-in bricks — `spideriq/auth-login`, `spideriq/auth-forgot-password`, `spideriq/auth-reset-password` — each rendering ONE `<spideriq-auth>` custom element with a **closed** shadow DOM (the password field is never readable from the host page). The same brick also supports **`mode="signup"`** for self-serve account creation.
@@ -712,7 +743,8 @@ marketplace_search(
 | Tool | Auth | Use case |
 |---|---|---|
 | `marketplace_search` | public | Cross-table search by mood / palette / brand_fit_tags / scene_type / agent_meta / asset_types |
-| `list_data_sources` | public | Discover available source IDs for binding `kind="dynamic"` blocks (posts, authors, IDAP×4, idap.lead) |
+| `list_data_sources` | public | Discover available source IDs for binding `kind="dynamic"` blocks (posts, authors, categories, tags, changelog; IDAP×4 + idap.lead are Phase 2) |
+| `list_data_source_items` | public | Fetch filtered/sorted/paginated rows from one source (the same door a dynamic component binds to) — preview rows before wiring a component. Server-side filters. |
 | `marketplace_suggest_agent_meta` | super_admin | **NEW (1.7.0)** Suggest mood/palette/brand_fit/scene_type/agent_meta for one asset via the SpiderGate inference engine. Pure read — no DB write. Then review + apply via `set_*_agent_meta`. |
 | `set_component_kind` | gated | Promote a custom component into the 4-class taxonomy (`static / interactive / dynamic / extension`) |
 | `set_component_agent_meta` | gated | Curate axes + ComponentAgentMeta on a component so other agents can find it |
@@ -774,6 +806,7 @@ Multi-step workflows that compose MCP tools. Live at **[skills/](skills/)** in t
 - [recipes/tilda-migration](skills/recipes/tilda-migration/) — Port a Tilda site with `auto_extract_css` + flat slugs + `category='header'|'footer'` components (2026-04-24)
 - [recipes/marketplace-search-and-insert](skills/recipes/marketplace-search-and-insert/) — Find a marketplace asset by intent (mood/palette/brand-fit/scene), insert it into a page (2026-05-05)
 - [recipes/marketplace-suggest-agent-meta](skills/recipes/marketplace-suggest-agent-meta/) — Suggest metadata for a freshly uploaded asset via the SpiderGate inference engine, then apply via the gated `set_*_agent_meta` tools (2026-05-06)
+- [recipes/build-a-dynamic-component](skills/recipes/build-a-dynamic-component/) — Discover a data source → preview rows → create a `kind="dynamic"` component → place → deploy. Live, server-filtered collections in any component (2026-06-09)
 
 Tier 3 `impl.ts` files use only Node 18+ stdlib (`fetch`, `fs`, `path`) — zero npm dependencies. Copy-paste them into your agent's sandbox and run with `npx tsx impl.ts`. No extra runtime required.
 
@@ -813,6 +846,7 @@ Tier 3 `impl.ts` files use only Node 18+ stdlib (`fetch`, `fs`, `path`) — zero
 - [Design a Form — Presets, Token Overrides, Per-Question Media](knowledge-items/23-spideriq-design-a-form/) — Give a Form a visual identity.
 - [Fill the CRM from a Form — IDAP Field Types + crm_target](knowledge-items/24-spideriq-idap-fill-from-form/) — Make a Form populate the tenant CRM on submit.
 - [Build a Login Page — Authentication Components + auth_target](knowledge-items/25-spideriq-build-a-login-page/) — Add a sign-in / forgot-password / reset-password page using the designable Authentication components (spideriq/auth-login, auth-forgot-password, auth-reset-password).
+- [Build a Dynamic Component — Live, Server-Filtered Collections](knowledge-items/26-spideriq-build-a-dynamic-component/) — Build a kind='dynamic' component that binds a live CMS collection (posts / authors / categories / tags / changelog) with server-side filtering, then place it on a page and deploy.
 
 ### Core MCP-namespace skills
 

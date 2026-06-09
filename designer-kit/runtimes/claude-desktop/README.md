@@ -56,6 +56,7 @@ For task-specific recipes, paste the relevant skill body from [shared/recipes/](
 - **Design a Form — Presets, Token Overrides, Per-Question Media** — `shared/recipes/design-a-form/SKILL.md`
 - **Fill the CRM from a Form — IDAP Field Types + crm_target** — `shared/recipes/idap-fill-from-form/SKILL.md`
 - **Build a Login Page — Authentication Components + auth_target** — `shared/recipes/build-a-login-page/SKILL.md`
+- **Build a Dynamic Component — Live, Server-Filtered Collections** — `shared/recipes/build-a-dynamic-component/SKILL.md`
 
 ## 4. Optional: build via the CLI
 
