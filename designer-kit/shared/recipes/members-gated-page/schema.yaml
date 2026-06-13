@@ -1,0 +1,91 @@
+name: members-gated-page
+tier: 2
+description: >
+  Put a page behind a members login wall — the site's OWN members (Site
+  Members), not the SpiderIQ dashboard. Set a page's access level to
+  'logged_in' (any member of this site) or 'group-restricted' (named groups
+  only); 'public' (default) leaves it open. Needs a login page on the same
+  site with auth_target=site_members (see build-a-login-page). The member
+  cookie is host-only, so the login form must be same-host as the gated pages.
+
+inputs:
+  page_slug:
+    type: string
+    default: "portal"
+    hint: "Slug of the page to protect (e.g. 'portal')."
+  access:
+    type: string
+    required: true
+    hint: "public | logged_in | group-restricted. REQUIRED — ask the user which pages are members-only."
+  allowed_groups:
+    type: array
+    required: false
+    hint: "Group slugs allowed when access=group-restricted (e.g. ['clients'])."
+
+steps:
+  - id: create_page
+    description: Create (or pick) the page to protect.
+    tool: content_create_page
+    args:
+      slug: "{{ inputs.page_slug }}"
+      title: "Client Portal"
+    output: page
+
+  - id: set_access
+    description: >
+      Set the page's access level. For group-restricted, also pass
+      allowed_groups. public (default) leaves it open.
+    tool: page_set_access
+    args:
+      page_id: "{{ page.id }}"
+      access: "{{ inputs.access }}"
+      allowed_groups: "{{ inputs.allowed_groups }}"
+    output: access_set
+
+  - id: ensure_login_page
+    description: >
+      Ensure a login page exists on THIS site with auth_target=site_members
+      (see recipes/build-a-login-page). The member cookie is host-only, so the
+      login form must be same-host; leave members_base unset so the renderer
+      wires it to the page's own origin.
+    tool: page_insert_section
+    args:
+      page_id: "<login page uuid on this site>"
+      component_slug: "spideriq/auth-login"
+      props:
+        auth_target: "site_members"
+        methods: ["email_password", "magic_link", "google"]
+      position: "end"
+
+  - id: publish_deploy
+    description: Publish the gated page, then deploy the site (dry_run → confirm_token → deploy) so the edge picks up the gate.
+    tool: content_publish_page
+    args:
+      id: "{{ page.id }}"
+
+  - id: verify
+    description: >
+      Visual-check the gated URL. Anonymous → redirected to /login (gate
+      works); a signed-in member → the page renders.
+    tool: content_visual_check
+    args:
+      page_url: "https://<site>/{{ inputs.page_slug }}"
+    output: visual
+
+outputs:
+  page_id: "{{ page.id }}"
+  access: "{{ inputs.access }}"
+
+notes: |
+  - access is enforced at the Cloudflare edge and only takes effect after you
+    publish the page AND deploy the site.
+  - public (default) → no gating. logged_in → any member of this site.
+    group-restricted → members whose group is in allowed_groups.
+  - The login brick MUST use auth_target=site_members (not 'dashboard').
+  - The member session cookie is host-only: keep the login page on the same
+    site as the gated pages and leave members_base unset.
+  - Members / groups / invitations / SSO / Data Restrictions are managed in the
+    dashboard Content → Users area; the per-member API is session-scoped today
+    (not the public PAT surface). Agent member-management tooling is on the
+    roadmap — this recipe covers setting page access (page_set_access).
+  - Members are isolated per site; a member of one site cannot access another.

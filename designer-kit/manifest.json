@@ -234,6 +234,13 @@
       "ki_index": 26,
       "title": "Build a Dynamic Component — Live, Server-Filtered Collections",
       "summary": "Build a kind='dynamic' component that binds a live CMS collection (posts / authors / categories / tags / changelog) with server-side filtering, then place it on a page and deploy. Discover sources via list_data_sources, preview rows via list_data_source_items, create with kind=dynamic + block_type + js_runtime + sources (all required, else 422), insert with page_insert_section (rows render as `items`), deploy. Use whenever the user asks to 'show recent posts', 'list the authors on a page', 'add a changelog feed', 'a filtered card grid', or any 'live / dynamic / data-driven component / section' request."
+    },
+    {
+      "id": "members-gated-page",
+      "kind": "recipe",
+      "ki_index": 27,
+      "title": "Members-Gated Page — Site Members + per-page access",
+      "summary": "Put a page behind a members login wall (Site Members — the site's OWN members, not the SpiderIQ dashboard). Every page has an access level: public (default) | logged_in (any member of this site) | group-restricted (named groups only). Set it with page_set_access (access + allowed_groups), ensure a login page on the SAME site uses auth_target=site_members (the member cookie is host-only ⇒ same-host sign-in), then publish + deploy so the Cloudflare edge enforces the gate, and visual-check (anonymous → redirected to /login; member → renders). Members / groups / invitations / SSO / Data Restrictions are managed in the dashboard Content → Users area. Use whenever the user asks for 'a members-only page', 'gate this page behind login', 'only logged-in users should see X', 'a client portal', or 'restrict this page to a group'."
     }
   ]
 }
