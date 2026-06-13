@@ -2,6 +2,15 @@
 
 Things that cause silent failures or broken deploys. Read before building.
 
+## Jun 2026 — A members login form must be SAME-HOST as the gated pages (Site Members, 2026-06-13)
+
+The member session cookie is **host-only** — it is set on the site's own domain. So the Authentication brick that signs members in (`auth_target="site_members"`) must live on the **same site** as the pages it unlocks. A login form on a different host (a separate `members_base`, an apex domain, a shared login site) **silently fails to log the visitor in** — sign-in appears to succeed but no usable session cookie lands on the gated domain.
+
+- **Fix:** embed `<spideriq-auth auth_target="site_members">` on a page of the same site and **leave `members_base` unset** — the renderer injects the page's own origin so the form posts same-host.
+- **`access` is edge-enforced — deploy to apply.** Setting a page to `logged_in` / `group-restricted` (`page_set_access`) only takes effect after you **publish the page and deploy the site**; the Cloudflare edge reads the access level at request time.
+- **Use `auth_target="site_members"`, not `"dashboard"`.** `dashboard` signs into the SpiderIQ dashboard (a different identity world) and won't open your gated pages.
+- Members are isolated per site — a member of site A cannot access site B. Don't try to share one members store across sites.
+
 ## Jun 2026 — Signup (`<spideriq-auth mode="signup">`) mints NO session — don't expect a redirect or cookie (Self-serve signup, 2026-06-08)
 
 When you embed the Authentication brick in `mode="signup"` (`auth_target=dashboard`), submitting the form does **not** sign the visitor in. There is **no session and no cookie at signup** — by design. On submit the brick shows a neutral *"Check your email…"* state and stays on the page. The dashboard session only exists **after** the visitor clicks the verification link in the email (`→ /login?verified=1`) and then logs in.

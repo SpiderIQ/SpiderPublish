@@ -720,6 +720,26 @@ Embed `<spideriq-auth mode="signup" auth-target="dashboard">` on a `/signup` pag
 
 Full flow: [recipes/build-a-login-page/](../recipes/build-a-login-page/) • [examples/build-login-page.sh](../examples/build-login-page.sh) • [examples/build-signup-page.sh](../examples/build-signup-page.sh) • [components/auth-login.json](../components/auth-login.json).
 
+### Site Members — gate pages behind a member login wall
+
+A site can put its **own** pages behind a login wall for its **own** members (the Softr-Users model). Every page has an **access level**:
+
+| `access` | Who sees the page |
+|---|---|
+| `public` (default) | everyone — no gating, no overhead |
+| `logged_in` | any signed-in member of **this** site |
+| `group-restricted` | only members whose group is in the page's `allowed_groups` |
+
+Set it with `page_set_access(page_id, access, allowed_groups)`. The level is enforced at the **Cloudflare edge** and only takes effect after you **publish the page and deploy the site**. New pages are `public` by default, so adding members never changes a page you didn't explicitly gate.
+
+A members-gated site needs a **login page on the same site** built with the Authentication brick `auth_target="site_members"`. The member session cookie is **host-only** — it lives on the site's own domain — so the login form must be **same-host** as the gated pages (leave `members_base` unset and the renderer wires it to the page's own origin).
+
+> **Member administration** — invitations, groups, SSO providers (Google / GitHub / OIDC), and record-level Data Restrictions — is done in the dashboard **Content → Users** area. The per-member management API is session-scoped today (not the public PAT surface); agents set page access via `page_set_access` and hand member admin to the site owner. Agent member-management tooling is on the roadmap.
+
+Members are isolated per site: a member of one site cannot access another.
+
+Full flow: [recipes/members-gated-page/](../recipes/members-gated-page/) • [examples/members-gated-page.sh](../examples/members-gated-page.sh).
+
 ---
 
 ### Rate Limits
@@ -847,6 +867,7 @@ Tier 3 `impl.ts` files use only Node 18+ stdlib (`fetch`, `fs`, `path`) — zero
 - [Fill the CRM from a Form — IDAP Field Types + crm_target](.cursor/rules/idap-fill-from-form.mdc) — Make a Form populate the tenant CRM on submit.
 - [Build a Login Page — Authentication Components + auth_target](.cursor/rules/build-a-login-page.mdc) — Add a sign-in / forgot-password / reset-password page using the designable Authentication components (spideriq/auth-login, auth-forgot-password, auth-reset-password).
 - [Build a Dynamic Component — Live, Server-Filtered Collections](.cursor/rules/build-a-dynamic-component.mdc) — Build a kind='dynamic' component that binds a live CMS collection (posts / authors / categories / tags / changelog) with server-side filtering, then place it on a page and deploy.
+- [Members-Gated Page — Site Members + per-page access](.cursor/rules/members-gated-page.mdc) — Put a page behind a members login wall (Site Members — the site's OWN members, not the SpiderIQ dashboard).
 
 ### Core MCP-namespace skills
 
