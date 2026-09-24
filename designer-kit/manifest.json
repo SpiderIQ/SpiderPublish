@@ -2,7 +2,7 @@
   "$schema": "./scripts/manifest.schema.json",
   "version": "1.0.0",
   "description": "SpiderPublish Starter Kit — runtime + skill registry. shared/ is the source of truth; runtimes/ is emitted by scripts/build.ts.",
-  "updated_at": "2026-09-05T00:00:00Z",
+  "updated_at": "2026-09-24T00:00:00Z",
   "runtimes": [
     {
       "id": "claude-code",
@@ -184,7 +184,7 @@
       "kind": "guide",
       "ki_index": 18,
       "title": "Pick the Right @spideriq/mcp-* Package",
-      "summary": "Decide which @spideriq/mcp-* npm package to install. Use whenever the user asks '@spideriq/mcp vs @spideriq/mcp-publish', 'kitchen-sink vs atomic MCP', 'why is the agent dropping tools?'. Almost always the answer is @spideriq/mcp-publish; the kitchen-sink @spideriq/mcp is only for cross-domain agents."
+      "summary": "Decide which @spideriq/mcp-* npm package to install for a SpiderIQ project, and fix tools that don't load. Use whenever the user asks 'which @spideriq/mcp do I install?', '@spideriq/mcp vs @spideriq/mcp-publish', 'facade mode', 'why is the agent dropping tools?', 'unknown tool', 'no SpiderIQ tools in Antigravity', or any package-selection question. Default: @spideriq/mcp-publish (~160 tools). If the host drops the tool list or reports unknown tool, run @spideriq/mcp in facade mode (SPIDERIQ_MCP_MODE=facade: ~9 tools listed, every tool reachable). Antigravity also needs SPIDERIQ_WORKSPACE pinned in the server env because it never finds spideriq.json."
     },
     {
       "id": "cli-quick-reference",
@@ -200,6 +200,13 @@
       "title": "Install + Set Up the SpiderPublish IDE Extension",
       "summary": "Install + bind the SpiderPublish IDE extension (SpiderIQ.spideriq-publish) in VSCode, Cursor, Antigravity, Windsurf. Three artifacts: install.md (extension + auth + project binding), pull-and-edit.md (working tenant content as files + native diff + stage), push-and-deploy.md (5-phase push pipeline + Deploy Site + link audit). The extension wraps @spideriq/mcp-publish (87 tools) as a child process — same primitives, click-driven instead of typed.",
       "multi_artifact": true
+    },
+    {
+      "id": "design-reusable-sections",
+      "kind": "guide",
+      "ki_index": 29,
+      "title": "Design Reusable Sections & Page Templates",
+      "summary": "Rules for building a SpiderPublish section (component) or page template that other brands can reuse: colours only through theme tokens (--primary, --primary-fg, --surface, --surface-elevated, --subtle, --heading, --body-text, --overlay/-fg), CSS in the css field with :host, no Tailwind inside the shadow DOM, JS through root not document, every word a prop, no fake social proof, light + dark + responsive checks, content_visual_check. Use whenever the user asks to design, author or hand in a component, section, marketplace asset or page template, asks 'why is my component rejected with 422', 'which colour variables can I use', or 'why does my section look wrong on another site'."
     },
     {
       "id": "build-lead-gen-form",

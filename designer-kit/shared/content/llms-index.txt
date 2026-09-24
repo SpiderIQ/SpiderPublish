@@ -42,7 +42,7 @@ This kit covers the content + extension slice. Other slices (lead-gen, mail, gat
 
 ## Surfaces
 
-- CLI: `@spideriq/cli@1.7.0` — `npx @spideriq/cli auth request --email <admin>`
+- CLI: `@spideriq/cli` (registry: run `npm config set @spideriq:registry https://npm.spideriq.ai` once) — `npx @spideriq/cli auth request --email <admin>`
 - MCP: `@spideriq/mcp-publish@1.7.0` — drop the kit's `.mcp.json` into your project root
 - IDE extension: `SpiderIQ.spideriq-publish@0.1.1` on Open VSX + VSCode Marketplace — `code --install-extension SpiderIQ.spideriq-publish`
 - Skills: Anthropic format in `skills/`; Antigravity Knowledge Items in `knowledge/antigravity/` (install via `examples/install-antigravity-kis.sh`)

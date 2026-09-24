@@ -1,8 +1,8 @@
 {
   "title": "Pick the Right @spideriq/mcp-* Package",
-  "summary": "Decide which @spideriq/mcp-* npm package to install. Use whenever the user asks '@spideriq/mcp vs @spideriq/mcp-publish', 'kitchen-sink vs atomic MCP', 'why is the agent dropping tools?'. Almost always the answer is @spideriq/mcp-publish; the kitchen-sink @spideriq/mcp is only for cross-domain agents.",
+  "summary": "Decide which @spideriq/mcp-* npm package to install for a SpiderIQ project, and fix tools that don't load. Use whenever the user asks 'which @spideriq/mcp do I install?', '@spideriq/mcp vs @spideriq/mcp-publish', 'facade mode', 'why is the agent dropping tools?', 'unknown tool', 'no SpiderIQ tools in Antigravity', or any package-selection question. Default: @spideriq/mcp-publish (~160 tools). If the host drops the tool list or reports unknown tool, run @spideriq/mcp in facade mode (SPIDERIQ_MCP_MODE=facade: ~9 tools listed, every tool reachable). Antigravity also needs SPIDERIQ_WORKSPACE pinned in the server env because it never finds spideriq.json.",
   "createdAt": "2026-05-08T00:00:00Z",
-  "updatedAt": "2026-09-05T00:00:00Z",
+  "updatedAt": "2026-09-24T00:00:00Z",
   "references": [
     "shared/guides/pick-mcp-package/"
   ]

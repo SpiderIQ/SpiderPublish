@@ -48,11 +48,14 @@ Full details: `docs.spideriq.ai/site-builder/sessions` and `docs.spideriq.ai/sit
 
 ## MCP Setup
 
-The `.mcp.json` in this project connects to SpiderIQ. After IDE restart, you have 155 tools.
+The `.mcp.json` in this project connects to SpiderIQ. After an IDE restart the SpiderPublish tools load (~160 with `@spideriq/mcp-publish`).
 
 ## Authentication
 
 ```bash
+# Once per machine — @spideriq/* is on SpiderIQ's registry, not public npm
+npm config set @spideriq:registry https://npm.spideriq.ai
+
 # Check auth
 npx @spideriq/cli auth whoami
 

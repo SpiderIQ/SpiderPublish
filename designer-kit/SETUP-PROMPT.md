@@ -6,13 +6,21 @@
 
 You are about to set up the SpiderPublish Starter Kit in this project. Identify yourself by which environment you're running in, then execute **only the matching block**:
 
+## Step 0 — every runtime, once per machine
+
+```bash
+npm config set @spideriq:registry https://npm.spideriq.ai
+```
+
+The `@spideriq/*` packages live on SpiderIQ's own registry, not the public npm registry. Without this, every `npx @spideriq/cli …` below fails with `404 Not Found`.
+
 ## If you are Claude Code
 
 ```bash
 npx degit SpiderIQ/SpiderPublish/designer-kit/runtimes/claude-code .
 ```
 
-Then read `CLAUDE.md` from the project root. Skills auto-load from `.claude/skills/` based on user intent. The bundled `.mcp.json` configures `@spideriq/mcp-publish` (87 tools, atomic publish slice). Continue with:
+Then read `CLAUDE.md` from the project root. Skills auto-load from `.claude/skills/` based on user intent. The bundled `.mcp.json` configures `@spideriq/mcp-publish` (the content + site-building slice, ~160 tools). Continue with:
 
 1. `npx @spideriq/cli auth request --email <admin-email>` — request a PAT (admin must approve)
 2. `npx @spideriq/cli use --list` then `npx @spideriq/cli use <workspace>` — bind this directory to a workspace (writes `workspace_id` into `./spideriq.json`, **commit it**). Add `--project <proj_…>` to also bind a specific site, or run `npx @spideriq/cli projects list` to see/create them
@@ -26,9 +34,14 @@ bash ./.spideriq-ref/install-knowledge-items.sh
 cp ./.spideriq-ref/.mcp.json ./.mcp.json   # if your project doesn't already have one
 ```
 
-The installer copies all 20 Knowledge Items to `~/.gemini/antigravity/knowledge/`. Antigravity auto-loads relevant KIs based on user intent — no `/slash` invocation needed. Then read `./.spideriq-ref/AGENTS.md` for the tool catalog.
+The installer copies all the Knowledge Items to `~/.gemini/antigravity/knowledge/`. Antigravity auto-loads relevant KIs based on user intent — no `/slash` invocation needed. Then read `./.spideriq-ref/AGENTS.md` for the tool catalog.
 
-Continue with the same auth + bind steps as above. Restart Antigravity so it picks up the new KIs and `.mcp.json`.
+Continue with the same auth + bind steps as above, then two Antigravity-specific fixes:
+
+1. **Pin the workspace in the MCP config.** Antigravity starts MCP servers from `/`, so the server never finds `./spideriq.json`. Add `"SPIDERIQ_WORKSPACE": "<your cli_… id>"` — and `"SPIDERIQ_PROJECT_ID": "<proj_…>"` if you bound a site — to the server's `env` in `.mcp.json` or `~/.gemini/antigravity/mcp_config.json`.
+2. **If no SpiderPublish tools appear, or calls fail with `unknown tool`,** the tool list was too big for this host. Switch to facade mode: package `@spideriq/mcp`, env `"SPIDERIQ_MCP_MODE": "facade"` — about 9 tools are listed and every tool is reached through `tool_search` → `tool_help` → `tool_call`. See `shared/guides/pick-mcp-package`.
+
+Restart Antigravity so it picks up the new KIs and MCP config, then run the MCP tool `get_auth_status` with `{"topic": "tenancy"}` — it must report your workspace with `resolved_via: "environment"`.
 
 ## If you are Cursor
 

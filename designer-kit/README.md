@@ -20,8 +20,8 @@ Same engine; same MCP server; same auth; four front doors. Pick by ergonomic fit
 | Surface | Best for | What you get | How to install |
 |---|---|---|---|
 | **IDE extension** (`SpiderIQ.spideriq-publish`) | Authoring multi-section pages where you want to *see* what changes before pushing | Pages/posts/components/templates as files on disk · native VSCode diff editor · git-style stage view · pre-push link audit · one-keystroke deploy · bundles `@spideriq/mcp-publish` so AI agents in the same IDE share the surface | [Open VSX](https://open-vsx.org/extension/SpiderIQ/spideriq-publish) (Cursor / Antigravity / Windsurf) or [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=SpiderIQ.spideriq-publish) (VS Code 1.85+) |
-| **MCP server** (`@spideriq/mcp-publish`) | LLM agents in chat (Claude Code, Cursor chat, Antigravity chat, Claude Desktop) | 87 tools registered as Language Model Tools · `dry_run`-defaulted destructive ops · YAML response format opt-in · same auth as the CLI | `.mcp.json` config (see [Quick Start](#quick-start-2-minutes)) |
-| **CLI** (`@spideriq/cli`) | Scripts, CI, terminal-first workflows, agency loops over many tenants | Same primitives as MCP/extension, plus `auth request --email`, `use --list`, batch ops · machine-readable `--format yaml\|json\|md` | `npx @spideriq/cli --help` (one-shot) or `npm i -g @spideriq/cli --registry=https://npm.spideriq.ai` |
+| **MCP server** (`@spideriq/mcp-publish`) | LLM agents in chat (Claude Code, Cursor chat, Antigravity chat, Claude Desktop) | ~160 tools registered as Language Model Tools · `dry_run`-defaulted destructive ops · YAML response format opt-in · same auth as the CLI | `.mcp.json` config (see [Quick Start](#quick-start-2-minutes)) |
+| **CLI** (`@spideriq/cli`) | Scripts, CI, terminal-first workflows, agency loops over many tenants | Same primitives as MCP/extension, plus `auth request --email`, `use --list`, batch ops · machine-readable `--format yaml\|json\|md` | `npx @spideriq/cli --help` (one-shot, after the one-time registry step in [Quick Start](#quick-start-2-minutes)) or `npm i -g @spideriq/cli --registry=https://npm.spideriq.ai` |
 | **HTTP API** | Bespoke integrations, CRMs, server-side automation, anything outside an LLM/IDE | Raw REST under `/api/v1/dashboard/projects/{project_id}/...` · same Phase 11+12 dry_run/confirm_token gating · OpenAPI spec at `/api/v1/docs` | Bearer token + `curl` — see [examples/build-and-deploy.sh](./examples/build-and-deploy.sh) |
 
 > **The IDE extension is a thin UX layer on top of the MCP server.** When you install it, it spawns `@spideriq/mcp-publish` as a child process. So an AI agent operating in the same IDE is reading the *exact same* tools the human is clicking — there's no second code path. Anything one can do, both can. See [docs.spideriq.ai/extension](https://docs.spideriq.ai/extension) for the install guide and command reference.
@@ -68,11 +68,19 @@ In order, shortest to deepest:
 8. [skills/recipes/](./skills/recipes/) — 10 multi-step workflows (marketplace-search, scroll-sequence, tilda-migration, link-audit, directory, …)
 9. [LEARNINGS.md](./LEARNINGS.md) — gotchas + anti-patterns
 
-**Current versions:** `@spideriq/cli@1.7.0`, `@spideriq/mcp-publish@1.7.0` (87 tools — the atomic content + extension slice), `@spideriq/core@1.6.0`, `SpiderIQ.spideriq-publish@0.1.1` (IDE extension on Open VSX + VSCode Marketplace). Prefer `mcp-publish` over the kitchen-sink `@spideriq/mcp@1.7.0` (126 tools) — under the ~128-tool injection limit some IDE/LLM stacks enforce, and less context burn per turn.
+**Versions move fast** — check the live head with `npm view @spideriq/mcp-publish version` (after the registry step in Quick Start). `@spideriq/mcp-publish` is the content + site-building slice (~160 tools). The kitchen-sink `@spideriq/mcp` carries every slice (~430 tools) and is meant to run in **facade mode** (`SPIDERIQ_MCP_MODE=facade`: ~9 tools listed, every tool reachable). If your IDE silently drops the tool list or reports `unknown tool` — seen in Antigravity — use facade mode. Decision tree: [pick-mcp-package](./shared/guides/pick-mcp-package/artifacts/workflow.md).
 
 Continue reading for full architecture, tool catalog, and recipes →
 
 ## Quick Start (2 minutes)
+
+### 0. One time per machine: point npm at the SpiderIQ registry
+
+```bash
+npm config set @spideriq:registry https://npm.spideriq.ai
+```
+
+The `@spideriq/*` packages are published on SpiderIQ's own registry, **not** on the public npm registry. Without this line every `npx @spideriq/cli …` command below fails with `404 Not Found`. (The bundled `.mcp.json` sets the registry for the MCP server itself, so only the CLI needs this.)
 
 ### 1. Copy files into your project — pick the runtime that matches your IDE
 
@@ -117,6 +125,8 @@ npx @spideriq/cli use --list
 # Bind — writes ./spideriq.json (commit it!)
 npx @spideriq/cli use <workspace>   # short id cli_xxx, brand slug, or company name (a workspace = your account). Add --project <proj_…> to bind a specific site
 ```
+
+> **Google Antigravity:** Antigravity starts MCP servers from `/`, so the MCP server never finds `./spideriq.json`. After binding, add `"SPIDERIQ_WORKSPACE": "<your cli_… id>"` (and `"SPIDERIQ_PROJECT_ID": "<proj_…>"` if you bound a site) to the server's `env` in `.mcp.json` or `~/.gemini/antigravity/mcp_config.json`, restart, and confirm with the MCP tool `get_auth_status` and `{"topic": "tenancy"}` → `resolved_via: "environment"`.
 
 From this point every dashboard call the CLI/MCP makes auto-rewrites to `/api/v1/dashboard/projects/{project_id}/...` and destructive operations go through a preview → confirm flow. Skip this step and your calls fall back to legacy URLs stamped `Deprecation: true` / `Sunset: 2026-05-14` — they work for now but will stop after that date.
 
