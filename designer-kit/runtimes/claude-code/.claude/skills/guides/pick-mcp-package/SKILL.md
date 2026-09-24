@@ -1,64 +1,107 @@
 ---
 name: pick-mcp-package
-description: "Decide which @spideriq/mcp-* npm package to install. Use whenever the user asks '@spideriq/mcp vs @spideriq/mcp-publish', 'kitchen-sink vs atomic MCP', 'why is the agent dropping tools?'. Almost always the answer is @spideriq/mcp-publish; the kitchen-sink @spideriq/mcp is only for cross-domain agents."
+description: "Decide which @spideriq/mcp-* npm package to install for a SpiderIQ project, and fix tools that don't load. Use whenever the user asks 'which @spideriq/mcp do I install?', '@spideriq/mcp vs @spideriq/mcp-publish', 'facade mode', 'why is the agent dropping tools?', 'unknown tool', 'no SpiderIQ tools in Antigravity', or any package-selection question. Default: @spideriq/mcp-publish (~160 tools). If the host drops the tool list or reports unknown tool, run @spideriq/mcp in facade mode (SPIDERIQ_MCP_MODE=facade: ~9 tools listed, every tool reachable). Antigravity also needs SPIDERIQ_WORKSPACE pinned in the server env because it never finds spideriq.json."
 ---
 # Pick the Right @spideriq/mcp-* Package
 
 When the user asks which MCP package to install, or reports tool-injection problems, walk this decision tree.
 
+> **Before anything else:** the `@spideriq/*` packages are published on SpiderIQ's registry, not on the public npm registry. The kit's `.mcp.json` sets `npm_config_registry` for the MCP server; for the CLI, run `npm config set @spideriq:registry https://npm.spideriq.ai` once per machine.
+
 ## The default answer
 
-**`@spideriq/mcp-publish@1.7.0`** — 87 tools, content + extension scope only. Use this unless you have a specific reason not to.
+**`@spideriq/mcp-publish`** — the content + site-building slice, about **160 tools**. Use it unless one of the cases below applies.
 
-The kit's [`.mcp.json`](../../../.mcp.json) already pins this. If the user copied that file into their project, they're done.
+The kit's [`.mcp.json`](../../../.mcp.json) already points at it. If the user copied that file into their project and the tools load, they're done.
 
-## When to use the kitchen-sink instead
+## When the tools don't load — use facade mode
 
-`@spideriq/mcp@1.7.0` (126 tools) bundles content + extension + booking + leads + mail + gate + admin. Pick it ONLY if the user's session genuinely needs every slice in one prompt — for example, an agent that simultaneously:
+Some hosts cap how many tool definitions they accept, and they fail **silently**: the tool list is dropped or truncated, the agent sees no SpiderPublish tools, or calls fail with `unknown tool <name>`. In Google Antigravity a 163-tool list loaded and a 431-tool list was silently dropped, so ~160 sits close to the edge.
 
-- Submits a SpiderMaps job (lead-gen)
-- Triggers SpiderVerify on the results (mail)
-- Routes generated copy through SpiderGate (gate)
-- Builds a landing page from the verified leads (publish)
-- Schedules outbound campaign in WindMill (workflows)
+The fix is **facade mode** on the full package:
 
-That kind of cross-domain agent needs the kitchen sink. A focused site-builder agent doesn't.
-
-## Focused add-on: `@spideriq/mcp-media`
-
-`@spideriq/mcp-media@1.0.0` is a **3-tool, read-only** package over the media catalog: `catalog_list_assets`, `catalog_get_asset`, `catalog_search_assets`. It lists / searches / fetches any image, video, or doc the tenant has hosted, across every storage tier (R2 / SeaweedFS / PeerTube), with `format: yaml|md` for token-efficient responses.
-
-Because it's tiny and has **no tool-name overlap** with `mcp-publish`, it's the one package you *can* safely load alongside the default — add it when an agent needs to browse the media library but you don't want the kitchen sink. (Writes — upload, video import — still live in `mcp-publish`'s `upload_*` / `media_*` tools.)
-
-```jsonc
+```json
 {
   "mcpServers": {
-    "spideriq":       { "command": "npx", "args": ["-y", "@spideriq/mcp-publish@latest"], "env": { "SPIDERIQ_FORMAT": "yaml" } },
-    "spideriq-media": { "command": "npx", "args": ["-y", "@spideriq/mcp-media@latest"],   "env": { "SPIDERIQ_FORMAT": "yaml" } }
+    "spideriq": {
+      "command": "npx",
+      "args": ["-y", "@spideriq/mcp@latest"],
+      "env": {
+        "SPIDERIQ_MCP_MODE": "facade",
+        "SPIDERIQ_FORMAT": "yaml",
+        "npm_config_registry": "https://npm.spideriq.ai"
+      }
+    }
   }
 }
 ```
 
-## Why mcp-publish is preferred when possible
+Facade mode lists about **9 tools** and reaches **every** SpiderIQ tool through them:
 
-1. **~128-tool injection limit.** Some IDE/LLM stacks (notably some older Cursor builds, some Antigravity configurations) silently drop tool injections above ~128. The kitchen-sink at 126 tools is right at the edge — adding any other MCP server pushes over.
-2. **Context burn per turn.** Every tool schema is sent to the LLM on every turn. 87 tools × ~150 tokens/schema ≈ 13K tokens/turn. 126 tools ≈ 19K tokens/turn. Over a long session, that's tens of thousands of tokens of overhead that doesn't help the task.
-3. **Scope clarity for the agent.** A focused tool surface produces focused agent behavior. An agent with admin tools available will occasionally try them when the user didn't ask.
+```
+tool_search("create a page")          → finds the right tool by what it does
+tool_help("content_create_page")      → that tool's exact parameters
+tool_call("content_create_page", {…}) → runs it
+```
 
-## When the user reports "tools are missing" or "the agent doesn't know about X"
+Every tool name in this kit still applies — the agent calls it through `tool_call`. Facade mode also brings the tools `mcp-publish` leaves out, such as the 20 `form_*` form-builder tools.
 
-Run this checklist:
+## When you need more than content
 
-1. Confirm `.mcp.json` is at the project root and references the right package
-2. Restart the IDE / Claude Code session — MCP servers load on startup
-3. Run `auth_whoami` to confirm the MCP server is reachable
-4. If `whoami` works but a specific tool is "missing": check the package — `mcp-publish` doesn't expose `lead_*`, `mail_*`, `gate_*`, `admin_*`, or `catalog_*` tools. Switch to `mcp`, or load a focused package (`@spideriq/mcp-media` for `catalog_*`) only if needed.
+`@spideriq/mcp` without facade mode registers every slice at once (about 430 tools: booking, forms, lead generation, mail, gateway, …). Most hosts won't load that many — **always run it in facade mode.**
+
+## Focused add-on: `@spideriq/mcp-media`
+
+`@spideriq/mcp-media` is a **small, read-only** package over the media catalog: `catalog_list_assets`, `catalog_get_asset`, `catalog_search_assets`. It lists / searches / fetches any image, video, or doc the tenant has hosted, with `format: yaml|md` for token-efficient responses.
+
+Because it has **no tool-name overlap** with `mcp-publish`, it's the one package you *can* load alongside the default:
+
+```jsonc
+{
+  "mcpServers": {
+    "spideriq":       { "command": "npx", "args": ["-y", "@spideriq/mcp-publish@latest"], "env": { "SPIDERIQ_FORMAT": "yaml", "npm_config_registry": "https://npm.spideriq.ai" } },
+    "spideriq-media": { "command": "npx", "args": ["-y", "@spideriq/mcp-media@latest"],   "env": { "SPIDERIQ_FORMAT": "yaml", "npm_config_registry": "https://npm.spideriq.ai" } }
+  }
+}
+```
+
+## Pinning the workspace (Antigravity, multi-workspace users)
+
+The MCP server finds your workspace from `./spideriq.json`, walking up from its working directory. **Antigravity starts MCP servers from `/`**, so the file is never found. Pin it in the server's `env` instead:
+
+```json
+"env": {
+  "SPIDERIQ_WORKSPACE": "cli_…",
+  "SPIDERIQ_PROJECT_ID": "proj_…"
+}
+```
+
+`SPIDERIQ_WORKSPACE` picks the account; `SPIDERIQ_PROJECT_ID` picks one website inside it (leave it out for the default site). Check with the MCP tool `get_auth_status` and `{"topic": "tenancy"}` — it must say `resolved_via: "environment"`.
+
+## When the user reports "tools are missing"
+
+Read the exact error — different failures look alike:
+
+| Error | Cause | Fix |
+|---|---|---|
+| `unknown tool <name>`, or no SpiderPublish tools at all | the host dropped a tool list that was too big | facade mode (above) |
+| `unknown tool name: call_mcp_tool` | **another** MCP server in the same config file failed to start and took the loader down with it | fix or remove that other server; never leave an `env` value empty |
+| `npm error code ECOMPROMISED` | two servers raced on the npx cache at startup | pin versions instead of `@latest`, and give the server its own `"npm_config_cache"` directory |
+| `connection closed … EOF` | the same server name appears in two config files (global + project) | use a different name in each |
+| `404 Not Found - @spideriq/…` | npm looked on the public registry | the registry step at the top of this guide |
+
+Then:
+
+1. Restart the IDE / agent session — MCP servers load on startup.
+2. Call `get_auth_status` to confirm the server is reachable and bound to the right workspace.
+3. If one specific tool is missing: `mcp-publish` doesn't expose `form_*`, `lead_*`, `mail_*`, `gate_*`, `admin_*` or `catalog_*` tools — switch to `@spideriq/mcp` in facade mode, or add `@spideriq/mcp-media` for `catalog_*`.
 
 ## Anti-patterns
 
-- **Loading both `@spideriq/mcp` and `@spideriq/mcp-publish` in the same project.** Duplicate tool registration breaks discovery in most IDE/MCP integrations. The agent picks one randomly per turn. (Exception: `@spideriq/mcp-media` is a 3-tool read-only package with no overlap — safe to add next to `mcp-publish`.)
-- **Pinning `latest` without version-locking.** The kit pins `@spideriq/mcp-publish@latest` via `npx` in `.mcp.json` — that's intentional for the public kit (always-fresh). For production agency setups, pin a specific version (e.g. `@spideriq/mcp-publish@1.7.0`).
-- **Adding `@spideriq/mcp-mail` / `mcp-leads` / etc. just because they exist.** Each added MCP server stacks tool count and context burn. Only add what the agent actually needs.
+- **Loading both `@spideriq/mcp` and `@spideriq/mcp-publish` in the same project.** Duplicate tool registration breaks discovery; the agent picks one randomly per turn. (Exception: `@spideriq/mcp-media` has no overlap — safe next to `mcp-publish`.)
+- **Setting `SPIDERIQ_MCP_SLICE`.** The old curated `mac-128` slice is retired — the server ignores the variable and logs a warning. Use facade mode to shrink the tool list instead.
+- **`@latest` in production agency setups.** The kit uses `@latest` so a fresh copy is always current. For long-running setups, pin a version (`npm view @spideriq/mcp-publish version` shows the current one).
+- **Adding `@spideriq/mcp-mail` / `mcp-leads` / etc. just because they exist.** Each added server stacks tool count and context burn. Only add what the agent actually needs.
 
 ## Reference
 

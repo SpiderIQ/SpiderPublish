@@ -15,16 +15,18 @@ Cursor reads this file plus per-skill rules under `.cursor/rules/*.mdc`. Each ru
 > Tiers Reference: [docs.spideriq.ai/site-builder/component-tiers](https://docs.spideriq.ai/site-builder/component-tiers)
 > Agent Reference: [docs.spideriq.ai/site-builder/component-agents-reference](https://docs.spideriq.ai/site-builder/component-agents-reference)
 
-**Current package versions (1.7.0, 2026-05-06):** `@spideriq/cli@1.7.0`, `@spideriq/mcp-publish@1.7.0`, `@spideriq/core@1.6.0`. **New in 1.7.0:** `marketplace_suggest_agent_meta` — wraps the SpiderGate-powered inference engine so external LLM agents can suggest mood / palette / brand_fit_tags / scene_type / agent_meta for marketplace assets they upload (two-step: suggest → review → apply via the existing `set_*_agent_meta` tools). The atomic publish slice now exposes **7 Marketplace V2 tools** total (search, list_data_sources, set_component_kind, set_component_agent_meta, set_bg_video_agent_meta, set_site_template_agent_meta, marketplace_suggest_agent_meta) — see the "Marketplace V2" section below. The kitchen-sink `@spideriq/mcp@1.7.0` totals 126 tools and bundles SpiderBook booking + mail / leads / gate / admin slices. The starter kit's `.mcp.json` defaults to `@spideriq/mcp-publish` — under the ~128-tool injection limit enforced by some IDE/LLM stacks, and less context burn per message.
+**Package versions move fast** — check the live head with `npm view @spideriq/mcp-publish version` (after the registry step under Setup). **Added in 1.7.0:** `marketplace_suggest_agent_meta` — wraps the SpiderGate-powered inference engine so external LLM agents can suggest mood / palette / brand_fit_tags / scene_type / agent_meta for marketplace assets they upload (two-step: suggest → review → apply via the existing `set_*_agent_meta` tools). The atomic publish slice now exposes **7 Marketplace V2 tools** total (search, list_data_sources, set_component_kind, set_component_agent_meta, set_bg_video_agent_meta, set_site_template_agent_meta, marketplace_suggest_agent_meta) — see the "Marketplace V2" section below. The kitchen-sink `@spideriq/mcp` bundles every slice (~430 tools: booking, forms, mail, leads, gate, …) and is meant to run in facade mode (`SPIDERIQ_MCP_MODE=facade`). The starter kit's `.mcp.json` defaults to `@spideriq/mcp-publish` (~160 tools, content scope). If your IDE silently drops that many tools or reports `unknown tool` — seen in Antigravity — switch to facade mode; see the pick-mcp-package guide.
 
 ## Quick Reference
 
 ### Setup
+0. Once per machine: `npm config set @spideriq:registry https://npm.spideriq.ai` — the `@spideriq/*` packages are not on the public npm registry, so `npx @spideriq/cli` 404s without it
 1. Copy `.mcp.json` to your project root
 2. Copy `CLAUDE.md` to your project root
 3. Restart your IDE
 4. Authenticate: `npx @spideriq/cli auth request --email admin@company.com`
 5. **Bind this directory to a project** (mandatory): `npx @spideriq/cli use <project>` — writes `./spideriq.json`
+6. **Antigravity only:** it starts MCP servers from `/`, so `./spideriq.json` is never found — put `SPIDERIQ_WORKSPACE` (and `SPIDERIQ_PROJECT_ID` for a specific site) in the MCP server's `env` instead, then check `get_auth_status` with `{"topic": "tenancy"}` → `resolved_via: "environment"`
 
 From step 5 on, every dashboard call auto-rewrites to `/api/v1/dashboard/projects/{project_id}/...` and destructive tools default to `dry_run=true` (preview → confirm). Skipping step 5 falls back to legacy URLs that stop working 2026-05-14.
 
@@ -1049,6 +1051,7 @@ Tier 3 `impl.ts` files use only Node 18+ stdlib (`fetch`, `fs`, `path`) — zero
 
 - [Create a SpiderIQ Tenant Page](.cursor/rules/create-page.mdc) — Create a new published page on a SpiderIQ tenant via the @spideriq/mcp-publish MCP server.
 - [Build a SpiderIQ Personalized Landing Page](.cursor/rules/personalized-landing.mdc) — Build a personalized landing page via /lp/{slug}/{place_id} with merge tags fed by IDAP.
-- [Pick the Right @spideriq/mcp-* Package](.cursor/rules/pick-mcp-package.mdc) — Decide which @spideriq/mcp-* npm package to install.
+- [Pick the Right @spideriq/mcp-* Package](.cursor/rules/pick-mcp-package.mdc) — Decide which @spideriq/mcp-* npm package to install for a SpiderIQ project, and fix tools that don't load.
 - [@spideriq/cli Quick Reference](.cursor/rules/cli-quick-reference.mdc) — Run SpiderIQ from the terminal via @spideriq/cli — auth flow, project binding, pages CRUD, marketplace search, deploy, output formats.
 - [Install + Set Up the SpiderPublish IDE Extension](.cursor/rules/ide-extension-setup.mdc) — Install + bind the SpiderPublish IDE extension (SpiderIQ.
+- [Design Reusable Sections & Page Templates](.cursor/rules/design-reusable-sections.mdc) — Rules for building a SpiderPublish section (component) or page template that other brands can reuse: colours only through theme tokens (--primary, --primary-fg, --surface, --surface-elevated, --subtle, --heading, --body-text, --overlay/-fg), CSS in the css field with :host, no Tailwind inside the shadow DOM, JS through root not document, every word a prop, no fake social proof, light + dark + responsive checks, content_visual_check.
