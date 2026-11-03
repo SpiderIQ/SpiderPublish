@@ -59,6 +59,7 @@ For task-specific recipes, paste the relevant skill body from [shared/recipes/](
 - **Build a Dynamic Component — Live, Server-Filtered Collections** — `shared/recipes/build-a-dynamic-component/SKILL.md`
 - **Members-Gated Page — Site Members + per-page access** — `shared/recipes/members-gated-page/SKILL.md`
 - **Tripwire + OTO Commerce Funnel** — `shared/recipes/tripwire-oto/SKILL.md`
+- **Use Your Own Frontend — SpiderPublish as a headless CMS** — `shared/recipes/use-your-own-frontend/SKILL.md`
 
 ## 4. Optional: build via the CLI
 
