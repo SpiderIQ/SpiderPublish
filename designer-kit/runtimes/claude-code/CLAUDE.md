@@ -1555,6 +1555,19 @@ Members are isolated per site: a member of one site cannot access another.
 
 Full flow: [recipes/members-gated-page/](../recipes/members-gated-page/) • [examples/members-gated-page.sh](../examples/members-gated-page.sh).
 
+### Use your own frontend — SpiderPublish as a headless CMS
+
+Keep publishing in SpiderPublish and render the content in an app you build yourself (Next.js or React on your own Cloudflare Worker, Vercel, or anywhere else).
+
+- **Read** published content from any server with `X-Content-Domain: <your domain>` on `/api/v1/content/*`.
+- **Render** article bodies from `body_html`: single post, docs, press and changelog reads return the body already rendered, with text escaped and links checked.
+- **Install** `@spideriq/publish-sdk@0.1.0` from `npm.spideriq.ai` (add `@spideriq:registry=https://npm.spideriq.ai` to `.npmrc`). `createSpiderPublish({ site })` gives typed readers; a missing item returns `null`, and a wrong site throws `SITE_NOT_FOUND`. `<PostBody>` maps in-article component placeholders to your own components; `nextCache()` tags each read.
+- **Browser code** on a verified domain may read only. Writes (ask-the-docs, booking submits, funnel events, newsletter signups) go through a route on your own server.
+
+A headless site renders in your app, so SpiderPublish templates and `content_deploy_*` do not change it.
+
+Full flow: [recipes/use-your-own-frontend/](../recipes/use-your-own-frontend/) • [guide](https://publish.spideriq.ai/docs/building-your-site/your-own-frontend).
+
 ---
 
 ### Rate Limits
@@ -1722,6 +1735,7 @@ Tier 3 `impl.ts` files use only Node 18+ stdlib (`fetch`, `fs`, `path`) — zero
 - [Build a Dynamic Component — Live, Server-Filtered Collections](.claude/skills/recipes/build-a-dynamic-component/SKILL.md) — Build a kind='dynamic' component that binds a live CMS collection (posts / authors / categories / tags / changelog) with server-side filtering, then place it on a page and deploy.
 - [Members-Gated Page — Site Members + per-page access](.claude/skills/recipes/members-gated-page/SKILL.md) — Put a page behind a members login wall (Site Members — the site's OWN members, not the SpiderIQ dashboard).
 - [Tripwire + OTO Commerce Funnel](.claude/skills/recipes/tripwire-oto/SKILL.md) — Build a commerce funnel that sells a product — a tripwire checkout, a one-time-offer (OTO) upsell, then thank-you — taking real Stripe payments and landing a canonical order.
+- [Use Your Own Frontend — SpiderPublish as a headless CMS](.claude/skills/recipes/use-your-own-frontend/SKILL.md) — Render SpiderPublish content in a frontend you build yourself (Next.
 
 ### Core MCP-namespace skills
 

@@ -1,0 +1,103 @@
+---
+description: "Render SpiderPublish content in a frontend you build yourself (Next.js / React on your own Cloudflare Worker, Vercel, or anywhere). Read published content with X-Content-Domain, render article bodies from body_html (escaped, links checked), and use @spideriq/publish-sdk@0.1.0 from npm.spideriq.ai (add '@spideriq:registry=https://npm.spideriq.ai' to .npmrc): createSpiderPublish({ site }), posts/docs/press/changelog/pages/collections readers (get returns null when missing, a wrong site throws SITE_NOT_FOUND), <PostBody> with component mapping, nextCache() tags. Browser code on a verified domain may read only; writes go through your own server route. Use whenever the user asks for 'a headless CMS', 'SpiderPublish behind my Next.js site', 'show my SpiderPublish blog on my own site', or 'render the docs in my React app'."
+alwaysApply: false
+---
+# recipes/use-your-own-frontend
+
+Keep writing and publishing in SpiderPublish, and render the content in a frontend you build yourself: a Next.js or React app on your own Cloudflare Worker, Vercel, or anywhere else. The blog, docs, press room and changelog stay in SpiderPublish, where agents already publish them; only the design layer moves into the app.
+
+Use this whenever the user asks for "a headless CMS", "use SpiderPublish as the CMS for my Next.js site", "show my SpiderPublish blog on my own site", "render the docs in my React app", or "keep my own frontend but publish from SpiderPublish".
+
+## The three pieces
+
+1. **The content API** reads a site's published content from any server. Send `X-Content-Domain: <your domain>` to `https://spideriq.ai/api/v1/content/...`; no key is needed for published content.
+2. **`body_html`** — single post, docs page, press release and changelog reads return the article body already rendered to HTML. Text is escaped and link addresses are checked, so it goes straight into the page.
+3. **`@spideriq/publish-sdk`** — typed readers for every public content type. It uses only `fetch`, so it runs in Cloudflare Workers, edge runtimes and browsers.
+
+## Steps
+
+```bash
+# 1. Point the @spideriq scope at the SpiderIQ registry (not npmjs.com), once
+echo "@spideriq:registry=https://npm.spideriq.ai" >> .npmrc
+
+# 2. Install the pinned version
+npm install @spideriq/publish-sdk@0.1.0
+```
+
+```ts
+// 3. lib/cms.ts — one client per site
+import { createSpiderPublish } from "@spideriq/publish-sdk";
+import { nextCache } from "@spideriq/publish-sdk/next";
+
+export const cms = createSpiderPublish({
+  site: "yoursite.com",            // a verified domain of the SpiderPublish site
+  requestInit: nextCache({ revalidate: 300 }),
+});
+```
+
+```tsx
+// 4. app/blog/[slug]/page.tsx
+import { notFound } from "next/navigation";
+import { PostBody } from "@spideriq/publish-sdk/react";
+import { cms } from "@/lib/cms";
+
+export default async function BlogPost({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const post = await cms.posts.get(slug);
+  if (!post) notFound();
+  return <PostBody html={post.body_html} className="prose" />;
+}
+```
+
+```bash
+# 5. Verify against the live site before you build UI on it
+curl -s https://spideriq.ai/api/v1/content/posts?page_size=1 \
+  -H "X-Content-Domain: yoursite.com"
+```
+
+## What the readers return
+
+| Content | Calls |
+|---|---|
+| Blog | `posts.list` · `posts.get(slug)` · `posts.featured` · `posts.search(q)` |
+| Docs | `docs.tree` · `docs.get(path)` · `docs.search(q)` |
+| Press | `press.list` · `press.get(slug)` · `press.contacts()` |
+| Changelog | `changelog.list` · `changelog.get(versionOrId)` |
+| Pages | `pages.list` · `pages.get(slug)` — blocks as data; you design each block type |
+| Site | `navigation(location)` · `settings()` · `sitemap()` |
+| Collections | `collection(slug).list(...)` · `collection(slug).get(recordSlug)` |
+
+A `get` for an item that does not exist or is not published returns `null`. A `site` that is not a SpiderPublish site throws `SpiderPublishError` with code `SITE_NOT_FOUND`, so a typo never looks like an empty blog.
+
+## Components inside an article
+
+An author can place a SpiderPublish component inside a post. A foreign frontend cannot run it, so in `body_html` it arrives as an empty placeholder carrying its name and props. Map the ones you want:
+
+```tsx
+<PostBody
+  html={post.body_html}
+  components={{ "pricing-table": (props) => <Pricing plan={props.plan} /> }}
+/>
+```
+
+Unmapped placeholders render nothing. Outside React, `splitBodyHtml(html)` returns the HTML and component segments.
+
+## Caching
+
+`nextCache()` stores each read in the Next.js data cache under a tag per item and one for the whole site. Evict one post with `revalidateTag(cacheTags.post("yoursite.com", "my-post"))`, or the whole site with `cacheTags.site("yoursite.com")`. Outside Next.js, pass your own `requestInit` hook (for example Cloudflare's `cf: { cacheTtl }`).
+
+## Browser calls
+
+Server-side calls work from any host. Browser code on your domain may **read** published content, booking pages and funnels once that domain is verified on the SpiderPublish site; the response carries no cookies and only GET and HEAD are allowed.
+
+Writes are not opened to browsers. Ask-the-docs, booking submits, funnel events and newsletter signups go through a route on your own server, which calls the API with your site's domain.
+
+## Anti-patterns
+
+- **Installing from npmjs.com.** The package is on `npm.spideriq.ai`; without the `.npmrc` scope line, `npm install` fails with a 404.
+- **Converting the stored body yourself.** Use `body_html`; the stored body is the editor's document tree and changes shape with the editor.
+- **Calling a write endpoint from the browser.** It is refused by design. Relay it through your own server route.
+- **Skipping the cache.** `posts.get` counts as a page view; cache reads so a busy page does not count every render.
+- **Hand-editing the site in SpiderPublish templates as well.** A headless site renders in your app; SpiderPublish templates and `content_deploy_*` do not change it.
+
+Full guide: https://publish.spideriq.ai/docs/building-your-site/your-own-frontend
