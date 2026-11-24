@@ -202,6 +202,15 @@ Copy-paste and tweak. All examples are MDX-safe (fenced code blocks).
 | `{{ founded }}` | `1998` |
 | `{{ revenue }}` | `2840000` |
 
+### Your own fields
+
+| Tag | What | Example |
+|-----|------|---------|
+| `{{ custom \| json }}` | The client's own custom field values, one object keyed by field key (a bare `{{ custom }}` prints `[object Object]`) | `{"cuisine":"Neapolitan","outdoor_seating":true}` |
+| `{{ custom.<key> }}` | One value, e.g. `{{ custom.cuisine \| default: "" }}` | `Neapolitan` |
+
+A site sees only the fields marked public (`is_public: true`, set with `POST /api/v1/idap/custom-fields`). A private key is absent, exactly like a key that does not exist, so always give it a `| default:`.
+
 ### Arrays (for `{% for %}` loops)
 
 | Tag | Projection | Example use |

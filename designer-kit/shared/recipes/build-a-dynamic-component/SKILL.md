@@ -49,12 +49,25 @@ These live collections are bindable as a source AND available as globals (`{{ po
 
 `items` is your declared, filtered binding. The globals are unfiltered — use those for a simple list, `items` for the component's own binding.
 
+## Your business data: `idap.businesses` and its custom fields
+
+`idap.businesses` binds as a source like the collections above (it is not a global). Each item carries `custom`, the client's own field values keyed by field key. **A site sees only the fields marked public** (`is_public: true` on `POST /api/v1/idap/custom-fields`, or `PATCH /api/v1/idap/custom-fields/{key}`); a private key is absent, so give it a fallback:
+
+```liquid
+{% for item in items %}
+  <h3>{{ item.name }}</h3>
+  <p>Cuisine: {{ item.custom.cuisine | default: "—" }}</p>
+{% endfor %}
+```
+
+Filter and sort on a **public** key with `custom.<key>=`, `custom.<key>.<op>=` and `sort=custom.<key>` (`-` for descending). A private key in a filter or sort is answered exactly like a key that does not exist: `422`. A custom-field sort pages with `offset`, not `next_cursor`.
+
 ## Anti-patterns
 
 - **`kind="dynamic"` without all three** — `block_type` + `js_runtime` + a non-empty `sources[]` must be set together, or the create returns **422**. Use `js_runtime: "none"` for a pure-Liquid (server-rendered) component.
 - **Expecting a client-side `{% if %}` to narrow the query** — filters run **server-side** (`default_filter`, or the `list_data_source_items` `filter`). A template `{% if %}` only hides rows already fetched.
 - **Binding a singleton to a List** — the landing-page `lead` is a single record (`is_collection=false`); use it directly on a `/lp/` page, not as a list source.
-- **Reaching for directory data** — country / city / street / business sources aren't bindable yet (Phase 2). The blog collections above are live today.
+- **Expecting any `idap.*` source to list** — `idap.businesses` serves rows; `idap.streets` answers `422`, and `idap.lead` is a singleton (see above).
 
 ## See also
 
