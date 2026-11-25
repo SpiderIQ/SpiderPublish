@@ -2,6 +2,16 @@
 
 Things that cause silent failures or broken deploys. Read before building.
 
+## Nov 2026 — Business-data reads take a content read key (`X-Content-Key`), in log mode today
+
+The business-data reads — the `idap.*` source doors (`/items`, `/items/{slug}`, `/aggregate`), `/content/leads/resolve` and the `/directory/*` doors — now read an `X-Content-Key` header.
+
+- **Your site needs nothing.** A SpiderPublish site's renderer gets its own `site` key on its first deploy and sends it on its `/content` reads. A redeploy keeps the key.
+- **Nothing is refused today.** The mode is `log`: a keyless call is counted, not blocked. Keys become required in a later step, so do not build new code that relies on keyless reads.
+- **Keyless and `site` callers get the display set**, and only the **public** custom fields. Your own `external` key, or a PAT of the same workspace, gets the full row.
+- **Your own server:** mint an `external` key with `POST /api/v1/content-keys` (PAT; body `{"label": "…"}`, `scope` defaults to `external`), send it as `X-Content-Key`. `GET /api/v1/content-keys` lists keys, `DELETE /api/v1/content-keys/{key_id}` revokes one. The key's value appears only in the mint response: keep it server-side, never in a page or a browser script.
+- **A custom field is private until you set `is_public: true`.** Until then `{{ item.custom.<key> }}` and `{{ custom.<key> }}` render empty on a site, and a filter or sort on it is a `422`, exactly like an unknown key.
+
 ## Jun 2026 — A members login form must be SAME-HOST as the gated pages (Site Members, 2026-06-13)
 
 The member session cookie is **host-only** — it is set on the site's own domain. So the Authentication brick that signs members in (`auth_target="site_members"`) must live on the **same site** as the pages it unlocks. A login form on a different host (a separate `members_base`, an apex domain, a shared login site) **silently fails to log the visitor in** — sign-in appears to succeed but no usable session cookie lands on the gated domain.
