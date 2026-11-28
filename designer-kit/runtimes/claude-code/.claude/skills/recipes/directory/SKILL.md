@@ -102,6 +102,19 @@ seo_description_template: "Compare top-rated {category} in {city}. Ratings, revi
 
 Every category, every `(category, city)`, and every published listing auto-lands in `/sitemap.xml` with `<lastmod>` and `<changefreq>weekly</changefreq>`.
 
+### What a listing page puts in `<head>`
+
+A listing detail page hands `head.liquid` a `page` object, so a custom head snippet that reads `page.*` gets the listing, not the bare site name:
+
+| Key | Value, first one that exists wins |
+|---|---|
+| `page.title` | the listing's name |
+| `page.seo_title` | the listing's published AI title (`seo_title`) → the category's rendered `seo_title_template` → the listing's name |
+| `page.seo_description` | the listing's published AI description (`meta_description`) → the category's rendered `seo_description_template` |
+| `page.json_ld` | one `@graph` (a `LocalBusiness` from `schema_org`, plus an `FAQPage` from `faq`), only when the listing has published AI content; otherwise absent |
+
+AI content comes from an Enrichment run that writes to the directory. It starts as a draft, and a draft never reaches the page: an unpublished listing renders the category's templates and no JSON-LD.
+
 ## Listing fields
 
 Only `name` is required. Everything else shapes the page + the merge-tag pipeline:
